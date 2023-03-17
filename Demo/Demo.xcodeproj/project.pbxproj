@@ -7,12 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5CB75EDC29C427C700A3126E /* DozyCalendar in Resources */ = {isa = PBXBuildFile; fileRef = 5CF5F30029C3C73A00D78B7A /* DozyCalendar */; };
 		5CF5F2D629C3B8FD00D78B7A /* DozyCalendarDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF5F2D529C3B8FD00D78B7A /* DozyCalendarDemo.swift */; };
+		5CFACCBE29C42A310079111F /* DozyCalendar in Frameworks */ = {isa = PBXBuildFile; productRef = 5CFACCBD29C42A310079111F /* DozyCalendar */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		5CF5F2D229C3B8FD00D78B7A /* Demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Demo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CF5F2D529C3B8FD00D78B7A /* DozyCalendarDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DozyCalendarDemo.swift; sourceTree = "<group>"; };
+		5CF5F30029C3C73A00D78B7A /* DozyCalendar */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = DozyCalendar; path = ..; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -20,6 +23,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CFACCBE29C42A310079111F /* DozyCalendar in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -29,8 +33,10 @@
 		5CF5F2C929C3B8FD00D78B7A = {
 			isa = PBXGroup;
 			children = (
-				5CF5F2D429C3B8FD00D78B7A /* Demo */,
+				5CF5F2FF29C3C73A00D78B7A /* Packages */,
+				5CF5F2D429C3B8FD00D78B7A /* DozyCalendarDemo */,
 				5CF5F2D329C3B8FD00D78B7A /* Products */,
+				5CFACCBC29C42A310079111F /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -42,12 +48,27 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		5CF5F2D429C3B8FD00D78B7A /* Demo */ = {
+		5CF5F2D429C3B8FD00D78B7A /* DozyCalendarDemo */ = {
 			isa = PBXGroup;
 			children = (
 				5CF5F2D529C3B8FD00D78B7A /* DozyCalendarDemo.swift */,
 			);
-			path = Demo;
+			path = DozyCalendarDemo;
+			sourceTree = "<group>";
+		};
+		5CF5F2FF29C3C73A00D78B7A /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				5CF5F30029C3C73A00D78B7A /* DozyCalendar */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		5CFACCBC29C42A310079111F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -66,6 +87,9 @@
 			dependencies = (
 			);
 			name = Demo;
+			packageProductDependencies = (
+				5CFACCBD29C42A310079111F /* DozyCalendar */,
+			);
 			productName = Demo;
 			productReference = 5CF5F2D229C3B8FD00D78B7A /* Demo.app */;
 			productType = "com.apple.product-type.application";
@@ -108,6 +132,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CB75EDC29C427C700A3126E /* DozyCalendar in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -175,7 +200,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -229,7 +254,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -255,6 +280,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -284,6 +310,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -319,6 +346,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5CFACCBD29C42A310079111F /* DozyCalendar */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DozyCalendar;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5CF5F2CA29C3B8FD00D78B7A /* Project object */;
 }
