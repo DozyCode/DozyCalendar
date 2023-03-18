@@ -8,8 +8,8 @@
 import SwiftUI
 
 public protocol DozyCalendarChangeProvider: AnyObject {
-    var willScroll: (([Day]) -> Void)? { get set }
-    var didScroll: (([Day]) -> Void)? { get set }
+    var onWillScroll: (([Day]) -> Void)? { get set }
+    var onDidScroll: (([Day]) -> Void)? { get set }
 }
 
 private struct WillScrollEnvironmentKey: EnvironmentKey {

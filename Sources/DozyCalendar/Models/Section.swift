@@ -20,37 +20,36 @@ struct Section: Hashable {
 
 extension Section.Identifier {
     
-    var firstDate: Date {
+    func firstDate(_ calendar: Calendar) -> Date {
         var components = DateComponents()
-        components.year = year
-        components.setValue(section, for: style.sectionComponent)
+        switch style {
+        case .month:
+            components.year = year
+            components.month = section
+        case .week:
+            components.yearForWeekOfYear = year
+            components.weekOfYear = section
+        }
         return calendar.date(from: components)!
     }
     
-    var previous: Section.Identifier {
-        advanced(by: -1)
+    func previous(_ calendar: Calendar) -> Section.Identifier {
+        advanced(by: -1, calendar)
     }
     
-    var next: Section.Identifier {
-        advanced(by: 1)
+    func next(_ calendar: Calendar) -> Section.Identifier {
+        advanced(by: 1, calendar)
     }
     
-    func advanced(by numberOfSections: Int) -> Section.Identifier {
+    func advanced(by numberOfSections: Int, _ calendar: Calendar) -> Section.Identifier {
         let newSectionDate = calendar.date(
             byAdding: style.sectionComponent,
             value: numberOfSections,
-            to: firstDate
+            to: firstDate(calendar)
         )!
         let year = calendar.component(.year, from: newSectionDate)
-        
-        switch style {
-        case .week:
-            let weekOfYear = calendar.component(.weekOfYear, from: newSectionDate)
-            return .init(style: style, year: year, section: weekOfYear)
-        case .month:
-            let month = calendar.component(.month, from: newSectionDate)
-            return .init(style: style, year: year, section: month)
-        }
+        let newSection = calendar.component(style.sectionComponent, from: newSectionDate)
+        return .init(style: style, year: year, section: newSection)
     }
 }
 

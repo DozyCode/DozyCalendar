@@ -11,29 +11,10 @@ import UIKit
 // - Make sure jumping in certain direction looks accurate w/ scrolling
 //      - This is still an issue when you jump so far that a complete regeneration is needed
 // - Multiple selection
-// - No selection
-
-// State:
-// - Selected Date
-//
-// Proxy:
-// - Current month/section
-//
-// Other State:
-// - func willScrollTo(_ date: Date)
-// - func didScrollTo(_ date: Date)
-// - func shouldSelect(_ date: Date) -> Bool
-// - func shouldDeselect(_ date: Date) -> Bool
-// - func didSelect(_ date: Date)
-// - func didDeselect(_ date: Date)
+// - Start of week?
 //
 // Configuration:
-// - DateRange
-// - Section style
 // - Scroll Axis
-// - Cell Spacing
-
-let calendar = Calendar(identifier: .gregorian)
 
 enum CalendarError: String {
     case range = "The desired date lies outside of the provided date range."
@@ -49,16 +30,23 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     @Published var sections: [Section] = []
     @Published var calendarSize: CGSize = .zero
     
-    var willScroll: (([Day]) -> Void)?
-    var didScroll: (([Day]) -> Void)?
+    var onWillScroll: (([Day]) -> Void)?
+    var onDidScroll: (([Day]) -> Void)?
     
-    init(sectionStyle: SectionStyle, dateRange: DateRange) {
+    init(sectionStyle: SectionStyle, dateRange: DateRange, startOfWeek: Weekday) {
         self.sectionStyle = sectionStyle
         self.dateRange = dateRange
+        self.startOfWeek = startOfWeek
+        
+        // LEFT OFF: Start of week was broken for week views, because the section identifiers
+        // didn't respect start of week. After utilizing `firstWeekday` concept from Calendar,
+        // seems to work. Need to validate.
+        var calendar = Calendar.current
+        calendar.firstWeekday = startOfWeek.rawValue
+        self.calendar = calendar
         
         let selectedDate = Date()
         self.selectedDate = selectedDate
-        currentSectionID = selectedDate.sectionID(style: sectionStyle, calendar: calendar)
         
         super.init()
         generateCalendar(baseDate: selectedDate)
@@ -76,14 +64,20 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     
     // MARK: - Variables
     
-    private var currentSectionID: Section.Identifier
+    private weak var uiScrollView: UIScrollView? {
+        didSet {
+            guard uiScrollView != nil, let dateUponAppear else { return }
+            scrollTo(dateUponAppear, animated: false)
+        }
+    }
     
-    private weak var uiScrollView: UIScrollView?
+    private let calendar: Calendar
+    private let sectionStyle: SectionStyle
+    private let dateRange: DateRange
+    private let startOfWeek: Weekday
+    
     private var sectionCache = [Section.Identifier: Section]()
-    
-    private var sectionStyle: SectionStyle
-    private var dateRange: DateRange
-    private let calendar = Calendar.current
+    private var dateUponAppear: Date?
     
     // MARK: - Helpers
     
@@ -91,14 +85,16 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         switch dateRange {
         case .infinite:
             let currentSectionID = baseDate.sectionID(style: sectionStyle, calendar: calendar)
-            let firstSectionID = currentSectionID.advanced(by: -sectionDistanceToEdge)
-            let lastSectionID = currentSectionID.advanced(by: sectionDistanceToEdge)
+            let firstSectionID = currentSectionID.advanced(by: -sectionDistanceToEdge, calendar)
+            let lastSectionID = currentSectionID.advanced(by: sectionDistanceToEdge, calendar)
             generateSections(firstSectionID, lastSectionID)
         case let .limited(startDate, endDate):
             let firstSectionID = startDate.sectionID(style: sectionStyle, calendar: calendar)
             let lastSectionID = endDate.sectionID(style: sectionStyle, calendar: calendar)
             generateSections(firstSectionID, lastSectionID)
         }
+        
+        scrollTo(baseDate, animated: false)
     }
     
     private func generateSections(_ firstSectionID: Section.Identifier, _ secondSectionID: Section.Identifier) {
@@ -114,48 +110,56 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
                 sectionCache[sectionIDIterator] = section
                 sections.append(section)
             }
-            sectionIDIterator = sectionIDIterator.next
+            sectionIDIterator = sectionIDIterator.next(calendar)
         }
         self.sections = sections
     }
     
     private func section(for sectionID: Section.Identifier) -> Section {
         let firstDate = sectionID.firstDate
-        
+        let startOfWeek = startOfWeek.rawValue
         var days = [Day]()
         
         switch sectionID.style {
         case .week:
-            for day in 1...7 {
-                guard let date = calendar.date(byAdding: .day, value: day, to: firstDate) else { assert(false) }
+            for dayAdjustment in 0...6 {
+                guard let date = calendar.date(byAdding: .day, value: dayAdjustment, to: firstDate(calendar)) else { assert(false) }
                 days.append(.month(date))
             }
         case let .month(dynamicRows):
-            guard let range = calendar.range(of: .day, in: .month, for: firstDate) else { assert(false) }
-            var lastMonthDate = firstDate
-            // Check the weekday of the first date. If it isn't the first day of the week,
-            // we need to create the relevant 'pre-month dates'.
-            let weekDay = calendar.component(.weekday, from: firstDate)
-            if weekDay > 1 {
-                for dayDifference in stride(from: weekDay - 1, through: 1, by: -1) {
-                    guard let date = calendar.date(byAdding: .day, value: -dayDifference, to: firstDate) else { assert(false) }
-                    days.append(.preMonth(date))
+            guard let range = calendar.range(of: .day, in: .month, for: firstDate(calendar)) else { assert(false) }
+            var lastMonthDate = firstDate(calendar)
+            // Check the weekday of the first date. If the weekday is not equal to the
+            // start of the week, generate the pre-month days needed.
+            do {
+                let weekDay = calendar.component(.weekday, from: firstDate(calendar))
+                if weekDay != startOfWeek {
+                    let weekPositionAdjustment = weekDay < startOfWeek ? 7 : 0
+                    let preMonthDaysNeeded = weekDay - startOfWeek + weekPositionAdjustment
+                    for dayAdjustment in stride(from: preMonthDaysNeeded, to: 0, by: -1) {
+                        guard let date = calendar.date(byAdding: .day, value: -dayAdjustment, to: firstDate(calendar)) else { assert(false) }
+                        days.append(.preMonth(date))
+                    }
                 }
             }
             // Create the `month` dates.
-            for day in range {
-                // Subtract one, because the first of the month is the `firstDate`.
-                guard let date = calendar.date(byAdding: .day, value: day - 1, to: firstDate) else { assert(false) }
-                days.append(.month(date))
-                lastMonthDate = date
+            do {
+                for day in range {
+                    // Subtract one, because the first of the month is the `firstDate`.
+                    guard let date = calendar.date(byAdding: .day, value: day - 1, to: firstDate(calendar)) else { assert(false) }
+                    days.append(.month(date))
+                    lastMonthDate = date
+                }
             }
             // Check the weekday of the last date. If it isn't the last day of the week,
             // we need to create the relevant 'post-month dates'.
-            let remainingDaysRequired = dynamicRows ? 7 - calendar.component(.weekday, from: lastMonthDate) : 42 - days.count
-            if remainingDaysRequired > 0 {
-                for day in 1...remainingDaysRequired {
-                    guard let date = calendar.date(byAdding: .day, value: day, to: lastMonthDate) else { assert(false) }
-                    days.append(.postMonth(date))
+            do {
+                let remainingDaysRequired = dynamicRows ? 7 - calendar.component(.weekday, from: lastMonthDate) : 42 - days.count
+                if remainingDaysRequired > 0 {
+                    for day in 1...remainingDaysRequired {
+                        guard let date = calendar.date(byAdding: .day, value: day, to: lastMonthDate) else { assert(false) }
+                        days.append(.postMonth(date))
+                    }
                 }
             }
         }
@@ -165,7 +169,7 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     
     private func appendSection(direction: Direction) {
         guard let endSectionID = sections[keyPath: direction.endSectionIDKeypath] else { assert(false) }
-        let nextSectionID = endSectionID[keyPath: direction.nextSectionID]
+        let nextSectionID = direction.nextSectionID(sectionID: endSectionID, calendar)
         let newSection = section(for: nextSectionID)
         
         switch direction {
@@ -185,10 +189,10 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
             }
         }
         
-        var nextSectionID: KeyPath<Section.Identifier, Section.Identifier> {
+        func nextSectionID(sectionID: Section.Identifier, _ calendar: Calendar) -> Section.Identifier {
             switch self {
-            case .backward: return \.previous
-            case .forward: return \.next
+            case .backward: return sectionID.previous(calendar)
+            case .forward: return sectionID.next(calendar)
             }
         }
     }
@@ -197,9 +201,13 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
 extension DozyCalendarViewModel: DozyCalendarProxy {
     
     func scrollTo(_ date: Date, animated: Bool) {
-        guard let uiScrollView else { return }
-        let sectionID = date.sectionID(style: sectionStyle, calendar: calendar)
+        guard let uiScrollView else {
+            dateUponAppear = date
+            return
+        }
         
+        dateUponAppear = nil
+        let sectionID = date.sectionID(style: sectionStyle, calendar: calendar)
         // If the current array of sections contains the date, scroll directly to it.
         if let firstSection = sections.first,
            let lastSection = sections.last,
@@ -239,19 +247,19 @@ extension DozyCalendarViewModel: UIScrollViewDelegate {
         withVelocity velocity: CGPoint,
         targetContentOffset: UnsafeMutablePointer<CGPoint>
     ) {
-        guard let willScroll else { return }
+        guard let onWillScroll else { return }
         
         let targetPosition = Int(targetContentOffset.pointee.x / calendarSize.width)
         let targetSection = sections[targetPosition]
-        willScroll(targetSection.days)
+        onWillScroll(targetSection.days)
     }
 
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        guard let didScroll else { return }
+        guard let onDidScroll else { return }
         
         let targetPosition = Int(scrollView.contentOffset.x / calendarSize.width)
         let targetSection = sections[targetPosition]
-        didScroll(targetSection.days)
+        onDidScroll(targetSection.days)
     }
 }
 
