@@ -18,11 +18,7 @@ public struct DozyCalendar<Cell: View>: View {
         self._selectedDate = selectedDate
         self.cellBuilder = cellBuilder
         
-        _viewModel = StateObject(wrappedValue: DozyCalendarViewModel(
-            sectionStyle: configuration.sectionStyle,
-            dateRange: configuration.range,
-            startOfWeek: configuration.startOfWeek
-        ))
+        _viewModel = StateObject(wrappedValue: DozyCalendarViewModel(configuration: configuration))
     }
     
     @Environment(\.proxyProvider) var proxyProvider
@@ -32,6 +28,8 @@ public struct DozyCalendar<Cell: View>: View {
     @StateObject var viewModel: DozyCalendarViewModel
     @Binding private var selectedDate: Date?
     @State private var currentPage: Int = 0
+    @State private var calendarWidth: CGFloat?
+    @State private var calendarHeight: CGFloat?
     
     private let configuration: DozyCalendarConfiguration
     private let cellBuilder: (Day, Bool) -> Cell
@@ -40,33 +38,54 @@ public struct DozyCalendar<Cell: View>: View {
         return GridItem(.flexible(minimum: 0, maximum: .infinity), spacing: 0, alignment: .center)
     }
     
+    // LEFT OFF: Vertical scrolling is completely broken.
     public var body: some View {
         ScrollView(configuration.scrollAxis.toSet, showsIndicators: false) {
-            LazyHStack(spacing: 0) {
-                ForEach(viewModel.sections, id: \.self) { section in
-                    LazyVGrid(columns: columns, alignment: .center, spacing: configuration.cellSpacing ?? 0) {
-                        ForEach(section.days, id: \.self) { day in
-                            cellBuilder(day, selectedDate?.id == day.date.id)
-                                .onTapGesture {
-                                    selectedDate = day.date
-                                }
-                        }
+            switch configuration.scrollAxis {
+            case .horizontal:
+                LazyHStack(spacing: 0) {
+                    ForEach(viewModel.sections, id: \.self) { section in
+                        calendarSection(section)
+                            .frame(width: calendarWidth)
                     }
-                    .frame(width: viewModel.calendarSize.width)
                 }
+                .fixedSize()
+            case .vertical:
+                LazyVStack(spacing: 0) {
+                    ForEach(viewModel.sections, id: \.self) { section in
+                        calendarSection(section)
+                            .size { size in
+                                calendarHeight = size.height
+                            }
+                            .frame(width: calendarWidth, height: calendarHeight)
+                    }
+                }
+                .frame(height: calendarHeight)
             }
-            .fixedSize()
         }
         .uiScrollView { uiScrollView in
             viewModel.install(uiScrollView)
         }
+        .frame(height: calendarHeight)
         .onAppear {
             proxyProvider?(viewModel)
             viewModel.onWillScroll = willScroll
             viewModel.onDidScroll = didScroll
         }
         .size { size in
-            viewModel.calendarSize = size
+            calendarWidth = size.width
+            viewModel.calendarSizeUpdated(size)
+        }
+    }
+    
+    @ViewBuilder private func calendarSection(_ section: Section) -> some View {
+        LazyVGrid(columns: columns, alignment: .center, spacing: configuration.cellSpacing ?? 0) {
+            ForEach(section.days, id: \.self) { day in
+                cellBuilder(day, selectedDate?.id == day.date.id)
+                    .onTapGesture {
+                        selectedDate = day.date
+                    }
+            }
         }
     }
 }

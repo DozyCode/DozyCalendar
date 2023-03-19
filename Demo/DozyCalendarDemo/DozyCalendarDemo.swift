@@ -16,14 +16,14 @@ struct DozyCalendarDemo: App {
     @StateObject private var viewModel = DozyCalendarDemoViewModel()
     @State private var selectedDate: Date? = Date()
     @State private var currentDate = Date()
-    @State private var displayingMonth = false
+    @State private var displayingMonth = true
     
     private let monthConfig = DozyCalendarConfiguration(
         range: .infinite,
-        scrollAxis: .horizontal,
+        scrollAxis: .vertical,
         cellSpacing: nil,
         sectionStyle: .month(dynamicRows: false),
-        startOfWeek: .wed
+        startOfWeek: .sun
     )
     
     private let weekConfig = DozyCalendarConfiguration(
@@ -31,7 +31,7 @@ struct DozyCalendarDemo: App {
         scrollAxis: .horizontal,
         cellSpacing: nil,
         sectionStyle: .week,
-        startOfWeek: .wed
+        startOfWeek: .sun
     )
     
     enum Weekdays: String, CaseIterable {

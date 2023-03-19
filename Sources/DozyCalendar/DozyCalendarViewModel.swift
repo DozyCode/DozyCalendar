@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import SwiftUI
 
 // TODO: What's Left...
 // - Make sure jumping in certain direction looks accurate w/ scrolling
@@ -15,6 +16,7 @@ import UIKit
 //
 // Configuration:
 // - Scroll Axis
+// - Horizontal as well as vertical spacing?
 
 enum CalendarError: String {
     case range = "The desired date lies outside of the provided date range."
@@ -28,19 +30,16 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     
     @Published var selectedDate: Date
     @Published var sections: [Section] = []
-    @Published var calendarSize: CGSize = .zero
     
     var onWillScroll: (([Day]) -> Void)?
     var onDidScroll: (([Day]) -> Void)?
     
-    init(sectionStyle: SectionStyle, dateRange: DateRange, startOfWeek: Weekday) {
-        self.sectionStyle = sectionStyle
-        self.dateRange = dateRange
-        self.startOfWeek = startOfWeek
+    init(configuration: DozyCalendarConfiguration) {
+        self.sectionStyle = configuration.sectionStyle
+        self.dateRange = configuration.range
+        self.startOfWeek = configuration.startOfWeek
+        self.scrollAxis = configuration.scrollAxis
         
-        // LEFT OFF: Start of week was broken for week views, because the section identifiers
-        // didn't respect start of week. After utilizing `firstWeekday` concept from Calendar,
-        // seems to work. Need to validate.
         var calendar = Calendar.current
         calendar.firstWeekday = startOfWeek.rawValue
         self.calendar = calendar
@@ -56,6 +55,10 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         self.uiScrollView = uiScrollView
         uiScrollView.isPagingEnabled = true
         uiScrollView.delegate = self
+    }
+    
+    func calendarSizeUpdated(_ size: CGSize) {
+        calendarSize = size
     }
     
     // MARK: - Constants
@@ -75,9 +78,11 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     private let sectionStyle: SectionStyle
     private let dateRange: DateRange
     private let startOfWeek: Weekday
+    private let scrollAxis: Axis
     
     private var sectionCache = [Section.Identifier: Section]()
     private var dateUponAppear: Date?
+    private var calendarSize: CGSize = .zero
     
     // MARK: - Helpers
     
