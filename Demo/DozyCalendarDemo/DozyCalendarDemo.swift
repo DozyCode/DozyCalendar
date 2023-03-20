@@ -36,21 +36,11 @@ struct DozyCalendarDemo: App {
         startOfWeek: .sun
     )
     
-    enum Weekdays: String, CaseIterable {
-        case sun
-        case mon
-        case tue
-        case wed
-        case thu
-        case fri
-        case sat
-    }
-    
     @SceneBuilder var body: some Scene {
         WindowGroup {
             HStack {
-                ForEach(Weekdays.allCases, id: \.self) { day in
-                    Text(day.rawValue)
+                ForEach(monthConfig.weekdays, id: \.self) { day in
+                    Text(day.text)
                 }
             }
             ZStack {
@@ -72,6 +62,10 @@ struct DozyCalendarDemo: App {
                                 .foregroundColor(Color.gray)
                                 .padding(14)
                         }
+                    } headerBuilder: { weekday, isSelected in
+                        Text(weekday.text)
+                            .padding(.vertical, 6)
+                            .padding(.top, 4)
                     }
                 } else {
                     DozyCalendar(configuration: weekConfig, selectedDate: $selectedDate) { day, isSelected in

@@ -32,3 +32,16 @@ public struct DozyCalendarConfiguration {
     let sectionStyle: SectionStyle
     let startOfWeek: Weekday
 }
+
+public extension DozyCalendarConfiguration {
+    
+    var weekdays: [Weekday] {
+        let weekdays = Weekday.allCases
+        let weekdaySequences = weekdays.split(separator: startOfWeek, omittingEmptySubsequences: false)
+        
+        guard weekdaySequences.count > 1,
+              let firstSequence = weekdaySequences.first,
+              let secondSequence = weekdaySequences.last else { return weekdays }
+        return Array([startOfWeek] + secondSequence + firstSequence)
+    }
+}

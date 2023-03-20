@@ -14,7 +14,6 @@ import SwiftUI
 // - Multiple selection
 // - Vertical scroll axis not working
 // - Better errors
-// - Weekday view support?
 
 enum CalendarError: String {
     case range = "The desired date lies outside of the provided date range."
@@ -237,7 +236,6 @@ extension DozyCalendarViewModel: DozyCalendarProxy {
 extension DozyCalendarViewModel: UIScrollViewDelegate {
     
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        guard case .horizontal = scrollAxis else { return }
         guard case .infinite = dateRange else { return }
         
         let calendarSize: CGFloat
@@ -270,7 +268,6 @@ extension DozyCalendarViewModel: UIScrollViewDelegate {
         withVelocity velocity: CGPoint,
         targetContentOffset: UnsafeMutablePointer<CGPoint>
     ) {
-        guard case .horizontal = scrollAxis else { return }
         guard let onWillScroll else { return }
         
         let calendarSize: CGFloat
@@ -290,7 +287,6 @@ extension DozyCalendarViewModel: UIScrollViewDelegate {
     }
 
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        guard case .horizontal = scrollAxis else { return }
         guard let onDidScroll else { return }
         
         let calendarSize: CGFloat

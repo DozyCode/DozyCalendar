@@ -1,5 +1,5 @@
 //
-//  Size.swift
+//  ReadSize.swift
 //  DozyCalendar
 //
 //  Created by Carter Foughty on 3/16/23.
@@ -8,12 +8,12 @@
 import SwiftUI
 
 extension View {
-    func size(onChange: @escaping (CGSize) -> Void) -> some View {
-        modifier(Size(onChange: onChange))
+    func readSize(onChange: @escaping (CGSize) -> Void) -> some View {
+        modifier(SizeReader(onChange: onChange))
     }
 }
 
-struct Size: ViewModifier {
+struct SizeReader: ViewModifier {
     
     init(onChange: @escaping (CGSize) -> Void) {
         self.onChange = onChange

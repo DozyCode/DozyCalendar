@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum Weekday: Int {
+public enum Weekday: Int, CaseIterable {
     case sun = 1
     case mon = 2
     case tue = 3
@@ -15,4 +15,19 @@ public enum Weekday: Int {
     case thu = 5
     case fri = 6
     case sat = 7
+}
+
+public extension Weekday {
+    
+    var text: String {
+        switch self {
+        case .sun: return "Sun"
+        case .mon: return "Mon"
+        case .tue: return "Tue"
+        case .wed: return "Wed"
+        case .thu: return "Thu"
+        case .fri: return "Fri"
+        case .sat: return "Sat"
+        }
+    }
 }
