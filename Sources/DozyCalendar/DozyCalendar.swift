@@ -13,10 +13,14 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
         configuration: DozyCalendarConfiguration,
         selectedDate: Binding<Date?>,
         @ViewBuilder cellBuilder: @escaping (Day, Bool) -> Cell,
-        @ViewBuilder headerBuilder: @escaping (Weekday, Bool) -> Header
+        @ViewBuilder headerBuilder: @escaping (WeekdayModel, Bool, Bool) -> Header
     ) {
         self.configuration = configuration
         self._selectedDate = selectedDate
+        self._currentWeekday = State(initialValue: Calendar.current.component(.weekday, from: Date()))
+        if let selectedDate = selectedDate.wrappedValue {
+            self._selectedWeekday = State(initialValue: Calendar.current.component(.weekday, from: selectedDate))
+        }
         self.cellBuilder = cellBuilder
         self.headerBuilder = headerBuilder
         self.columns = Array(0...6).map { _ in
@@ -37,6 +41,11 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     ) where Header == EmptyView {
         self.configuration = configuration
         self._selectedDate = selectedDate
+        // TODO: Ideally this would dynamically update
+        self._currentWeekday = State(initialValue: Calendar.current.component(.weekday, from: Date()))
+        if let selectedDate = selectedDate.wrappedValue {
+            self._selectedWeekday = State(initialValue: Calendar.current.component(.weekday, from: selectedDate))
+        }
         self.headerBuilder = nil
         self.cellBuilder = cellBuilder
         self.columns = Array(0...6).map { _ in
@@ -60,10 +69,12 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     @State private var calendarWidth: CGFloat?
     @State private var calendarHeight: CGFloat?
     @State private var weekdayWidth: CGFloat?
+    @State private var currentWeekday: Int
+    @State private var selectedWeekday: Int?
     
     private let configuration: DozyCalendarConfiguration
     private let cellBuilder: (Day, Bool) -> Cell
-    private let headerBuilder: ((Weekday, Bool) -> Header)?
+    private let headerBuilder: ((WeekdayModel, Bool, Bool) -> Header)?
     private let dateFormatter = DateFormatter()
     private let columns: [GridItem]
     
@@ -71,8 +82,12 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
         VStack(spacing: 0) {
             if let headerBuilder {
                 HStack(alignment: .center, spacing: 0) {
-                    ForEach(configuration.weekdays, id: \.self) { weekday in
-                        headerBuilder(weekday, false)
+                    ForEach(configuration.weekdayModels, id: \.weekday) { weekday in
+                        headerBuilder(
+                            weekday,
+                            currentWeekday == weekday.index,
+                            selectedWeekday == weekday.index
+                        )
                             .frame(width: weekdayWidth)
                     }
                 }
@@ -114,6 +129,13 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
             proxyProvider?(viewModel)
             viewModel.onWillScroll = willScroll
             viewModel.onDidScroll = didScroll
+        }
+        .onChange(of: selectedDate) { selectedDate in
+            guard let selectedDate else {
+                selectedWeekday = nil
+                return
+            }
+            selectedWeekday = Calendar.current.component(.weekday, from: selectedDate)
         }
     }
     

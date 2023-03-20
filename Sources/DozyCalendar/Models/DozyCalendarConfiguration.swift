@@ -44,4 +44,18 @@ public extension DozyCalendarConfiguration {
               let secondSequence = weekdaySequences.last else { return weekdays }
         return Array([startOfWeek] + secondSequence + firstSequence)
     }
+    
+    var weekdayModels: [WeekdayModel] {
+        var calendar = Calendar.current
+        calendar.firstWeekday = startOfWeek.rawValue
+        let weekdays = weekdays
+        return weekdays.map {
+            WeekdayModel(
+                weekday: $0,
+                normalText: calendar.weekdaySymbols[$0.rawValue - 1],
+                shortText: calendar.shortWeekdaySymbols[$0.rawValue - 1],
+                veryShortText: calendar.veryShortWeekdaySymbols[$0.rawValue - 1]
+            )
+        }
+    }
 }

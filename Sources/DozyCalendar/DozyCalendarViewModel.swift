@@ -14,6 +14,8 @@ import SwiftUI
 // - Multiple selection
 // - Vertical scroll axis not working
 // - Better errors
+// - Hook up weekday bools
+// - Make sure highlighted day changes when today changes
 
 enum CalendarError: String {
     case range = "The desired date lies outside of the provided date range."
@@ -25,11 +27,15 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     
     // MARK: - API
     
-    @Published var selectedDate: Date
     @Published var sections: [Section] = []
     
     var onWillScroll: (([Day]) -> Void)?
     var onDidScroll: (([Day]) -> Void)?
+    
+    func isCurrentWeekday(index: Int) -> Bool {
+        let weekday = calendar.component(.weekday, from: Date())
+        return index == weekday
+    }
     
     init(configuration: DozyCalendarConfiguration) {
         self.sectionStyle = configuration.sectionStyle
@@ -41,11 +47,8 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         calendar.firstWeekday = startOfWeek.rawValue
         self.calendar = calendar
         
-        let selectedDate = Date()
-        self.selectedDate = selectedDate
-        
         super.init()
-        generateCalendar(baseDate: selectedDate)
+        generateCalendar(baseDate: Date())
     }
     
     func install(_ uiScrollView: UIScrollView) {

@@ -17,6 +17,7 @@ struct DozyCalendarDemo: App {
     @State private var selectedDate: Date? = Date()
     @State private var currentDate = Date()
     @State private var displayingMonth = true
+    @State private var calendarWidth: CGFloat?
     
     private let monthConfig = DozyCalendarConfiguration(
         range: .infinite,
@@ -38,11 +39,6 @@ struct DozyCalendarDemo: App {
     
     @SceneBuilder var body: some Scene {
         WindowGroup {
-            HStack {
-                ForEach(monthConfig.weekdays, id: \.self) { day in
-                    Text(day.text)
-                }
-            }
             ZStack {
                 if displayingMonth {
                     DozyCalendar(configuration: monthConfig, selectedDate: $selectedDate) { day, isSelected in
@@ -62,28 +58,48 @@ struct DozyCalendarDemo: App {
                                 .foregroundColor(Color.gray)
                                 .padding(14)
                         }
-                    } headerBuilder: { weekday, isSelected in
-                        Text(weekday.text)
+                    } headerBuilder: { weekday, isToday, isSelected in
+                        Text(weekday.shortText)
                             .padding(.vertical, 6)
                             .padding(.top, 4)
+                            .foregroundColor(isToday ? .blue : .black)
+                            .background(isSelected ? Color.orange : nil)
+                    }
+                    .background {
+                        Color.gray
+                            .opacity(0.5)
+                            .cornerRadius(12)
                     }
                 } else {
-                    DozyCalendar(configuration: weekConfig, selectedDate: $selectedDate) { day, isSelected in
-                        switch day {
-                        case let .month(date):
-                            ZStack {
-                                Text(string(for: date))
-                                    .padding(14)
-                                if isSelected {
-                                    Color.blue
-                                        .opacity(0.5)
-                                        .cornerRadius(8)
-                                }
+                    VStack {
+                        HStack {
+                            ForEach(monthConfig.weekdays, id: \.self) { day in
+                                Text(day.text)
+                                    .frame(maxWidth: .infinity)
                             }
-                        case .preMonth, .postMonth:
-                            Text(string(for: day.date))
-                                .foregroundColor(Color.gray)
-                                .padding(14)
+                        }
+                        DozyCalendar(configuration: weekConfig, selectedDate: $selectedDate) { day, isSelected in
+                            switch day {
+                            case let .month(date):
+                                ZStack {
+                                    Text(string(for: date))
+                                        .padding(14)
+                                    if isSelected {
+                                        Color.blue
+                                            .opacity(0.5)
+                                            .cornerRadius(8)
+                                    }
+                                }
+                            case .preMonth, .postMonth:
+                                Text(string(for: day.date))
+                                    .foregroundColor(Color.gray)
+                                    .padding(14)
+                            }
+                        }
+                        .background {
+                            Color.gray
+                                .opacity(0.5)
+                                .cornerRadius(12)
                         }
                     }
                 }
@@ -100,11 +116,6 @@ struct DozyCalendarDemo: App {
                     }
                     return false
                 }?.date ?? currentDate
-            }
-            .background {
-                Color.gray
-                    .opacity(0.5)
-                    .cornerRadius(12)
             }
             .padding(.top, 16)
             .padding(.horizontal, 16)

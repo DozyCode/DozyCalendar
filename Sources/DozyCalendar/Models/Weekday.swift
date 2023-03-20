@@ -17,6 +17,17 @@ public enum Weekday: Int, CaseIterable {
     case sat = 7
 }
 
+public struct WeekdayModel: Hashable {
+    public var weekday: Weekday
+    public var normalText: String
+    public var shortText: String
+    public var veryShortText: String
+    
+    var index: Int {
+        weekday.rawValue
+    }
+}
+
 public extension Weekday {
     
     var text: String {
