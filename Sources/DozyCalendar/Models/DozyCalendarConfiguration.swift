@@ -12,20 +12,23 @@ public struct DozyCalendarConfiguration {
     public init(
         range: DateRange,
         scrollAxis: Axis,
-        cellSpacing: CGFloat?,
+        rowSpacing: CGFloat,
+        columnSpacing: CGFloat,
         sectionStyle: SectionStyle,
         startOfWeek: Weekday
     ) {
         self.range = range
         self.scrollAxis = scrollAxis
-        self.cellSpacing = cellSpacing
+        self.rowSpacing = rowSpacing
+        self.columnSpacing = columnSpacing
         self.sectionStyle = sectionStyle
         self.startOfWeek = startOfWeek
     }
     
     let range: DateRange
     let scrollAxis: Axis
-    let cellSpacing: CGFloat?
+    let rowSpacing: CGFloat
+    let columnSpacing: CGFloat
     let sectionStyle: SectionStyle
     let startOfWeek: Weekday
 }

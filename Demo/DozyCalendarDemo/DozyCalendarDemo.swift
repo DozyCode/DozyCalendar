@@ -20,8 +20,9 @@ struct DozyCalendarDemo: App {
     
     private let monthConfig = DozyCalendarConfiguration(
         range: .infinite,
-        scrollAxis: .vertical,
-        cellSpacing: nil,
+        scrollAxis: .horizontal,
+        rowSpacing: 0,
+        columnSpacing: 0,
         sectionStyle: .month(dynamicRows: false),
         startOfWeek: .sun
     )
@@ -29,7 +30,8 @@ struct DozyCalendarDemo: App {
     private let weekConfig = DozyCalendarConfiguration(
         range: .infinite,
         scrollAxis: .horizontal,
-        cellSpacing: nil,
+        rowSpacing: 0,
+        columnSpacing: 0,
         sectionStyle: .week,
         startOfWeek: .sun
     )

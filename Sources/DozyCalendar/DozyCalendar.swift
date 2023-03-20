@@ -17,6 +17,13 @@ public struct DozyCalendar<Cell: View>: View {
         self.configuration = configuration
         self._selectedDate = selectedDate
         self.cellBuilder = cellBuilder
+        self.columns = Array(0...6).map { _ in
+            return GridItem(
+                .flexible(minimum: 0, maximum: .infinity),
+                spacing: configuration.columnSpacing,
+                alignment: .center
+            )
+        }
         
         _viewModel = StateObject(wrappedValue: DozyCalendarViewModel(configuration: configuration))
     }
@@ -34,11 +41,8 @@ public struct DozyCalendar<Cell: View>: View {
     private let configuration: DozyCalendarConfiguration
     private let cellBuilder: (Day, Bool) -> Cell
     private let dateFormatter = DateFormatter()
-    private let columns = Array(0...6).map { _ in
-        return GridItem(.flexible(minimum: 0, maximum: .infinity), spacing: 0, alignment: .center)
-    }
+    private let columns: [GridItem]
     
-    // LEFT OFF: Vertical scrolling is completely broken.
     public var body: some View {
         ScrollView(configuration.scrollAxis.toSet, showsIndicators: false) {
             switch configuration.scrollAxis {
@@ -79,9 +83,11 @@ public struct DozyCalendar<Cell: View>: View {
     }
     
     @ViewBuilder private func calendarSection(_ section: Section) -> some View {
-        LazyVGrid(columns: columns, alignment: .center, spacing: configuration.cellSpacing ?? 0) {
+        LazyVGrid(columns: columns, alignment: .center, spacing: configuration.rowSpacing) {
             ForEach(section.days, id: \.self) { day in
                 cellBuilder(day, selectedDate?.id == day.date.id)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
                     .onTapGesture {
                         selectedDate = day.date
                     }

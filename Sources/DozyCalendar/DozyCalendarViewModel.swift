@@ -12,11 +12,9 @@ import SwiftUI
 // - Make sure jumping in certain direction looks accurate w/ scrolling
 //      - This is still an issue when you jump so far that a complete regeneration is needed
 // - Multiple selection
-// - Start of week?
-//
-// Configuration:
-// - Scroll Axis
-// - Horizontal as well as vertical spacing?
+// - Vertical scroll axis not working
+// - Better errors
+// - Weekday view support?
 
 enum CalendarError: String {
     case range = "The desired date lies outside of the provided date range."
@@ -183,6 +181,13 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         }
     }
     
+    private func contentOffset(forSection section: CGFloat) -> CGPoint {
+        switch scrollAxis {
+        case .horizontal: return CGPoint(x: section * calendarSize.width, y: 0)
+        case .vertical: return CGPoint(x: 0, y: section * calendarSize.height)
+        }
+    }
+    
     fileprivate enum Direction {
         case backward
         case forward
@@ -218,12 +223,12 @@ extension DozyCalendarViewModel: DozyCalendarProxy {
            let lastSection = sections.last,
            firstSection.id...lastSection.id ~= sectionID,
            let sectionPosition = sections.firstIndex(where: { $0.id == sectionID }) {
-               let adjustedContentOffset = CGPoint(x: CGFloat(sectionPosition) * uiScrollView.frame.width, y: 0)
+            let adjustedContentOffset = contentOffset(forSection: CGFloat(sectionPosition))
                uiScrollView.setContentOffset(adjustedContentOffset, animated: animated)
         } else {
             // Otherwise, regenerate the calendar.
             generateCalendar(baseDate: date)
-            let adjustedContentOffset = CGPoint(x: CGFloat(sectionDistanceToEdge) * uiScrollView.frame.width, y: 0)
+            let adjustedContentOffset = contentOffset(forSection: CGFloat(sectionDistanceToEdge))
             uiScrollView.setContentOffset(adjustedContentOffset, animated: animated)
         }
     }
@@ -232,9 +237,21 @@ extension DozyCalendarViewModel: DozyCalendarProxy {
 extension DozyCalendarViewModel: UIScrollViewDelegate {
     
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard case .horizontal = scrollAxis else { return }
         guard case .infinite = dateRange else { return }
         
-        let currentPosition = Int(scrollView.contentOffset.x / calendarSize.width).clamped(to: 0...sections.count - 1)
+        let calendarSize: CGFloat
+        let contentOffset: CGFloat
+        switch scrollAxis {
+        case .horizontal:
+            calendarSize = self.calendarSize.width
+            contentOffset = scrollView.contentOffset.x
+        case .vertical:
+            calendarSize = self.calendarSize.height
+            contentOffset = scrollView.effectiveContentOffset.y
+        }
+        
+        let currentPosition = Int(contentOffset / calendarSize).clamped(to: 0...sections.count - 1)
         // If we approach either end, recalculate the months.
         if currentPosition >= sections.count - 2 {
             appendSection(direction: .forward)
@@ -242,8 +259,9 @@ extension DozyCalendarViewModel: UIScrollViewDelegate {
             appendSection(direction: .backward)
             // If we insert a new section at the beginning of the section array, adjust the content
             // offset to make the update look seemless.
-            let positionByWidth = CGFloat((scrollView.contentOffset.x) / calendarSize.width)
-            scrollView.setContentOffset(CGPoint(x: calendarSize.width * CGFloat(positionByWidth + 1), y: 0), animated: false)
+            let scaledPosition = CGFloat(contentOffset / calendarSize)
+            let adjustedContentOffset = self.contentOffset(forSection: scaledPosition + 1)
+            scrollView.setContentOffset(adjustedContentOffset, animated: false)
         }
     }
     
@@ -252,17 +270,41 @@ extension DozyCalendarViewModel: UIScrollViewDelegate {
         withVelocity velocity: CGPoint,
         targetContentOffset: UnsafeMutablePointer<CGPoint>
     ) {
+        guard case .horizontal = scrollAxis else { return }
         guard let onWillScroll else { return }
         
-        let targetPosition = Int(targetContentOffset.pointee.x / calendarSize.width)
+        let calendarSize: CGFloat
+        let contentOffset: CGFloat
+        switch scrollAxis {
+        case .horizontal:
+            calendarSize = self.calendarSize.width
+            contentOffset = targetContentOffset.pointee.x
+        case .vertical:
+            calendarSize = self.calendarSize.height
+            contentOffset = targetContentOffset.pointee.y
+        }
+        
+        let targetPosition = Int(contentOffset / calendarSize)
         let targetSection = sections[targetPosition]
         onWillScroll(targetSection.days)
     }
 
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        guard case .horizontal = scrollAxis else { return }
         guard let onDidScroll else { return }
         
-        let targetPosition = Int(scrollView.contentOffset.x / calendarSize.width)
+        let calendarSize: CGFloat
+        let contentOffset: CGFloat
+        switch scrollAxis {
+        case .horizontal:
+            calendarSize = self.calendarSize.width
+            contentOffset = scrollView.contentOffset.x
+        case .vertical:
+            calendarSize = self.calendarSize.height
+            contentOffset = scrollView.effectiveContentOffset.y
+        }
+        
+        let targetPosition = Int(contentOffset / calendarSize)
         let targetSection = sections[targetPosition]
         onDidScroll(targetSection.days)
     }
@@ -271,5 +313,15 @@ extension DozyCalendarViewModel: UIScrollViewDelegate {
 public extension Comparable {
     func clamped(to limits: ClosedRange<Self>) -> Self {
         min(max(self, limits.lowerBound), limits.upperBound)
+    }
+}
+
+public extension UIScrollView {
+    /// Content offset, factoring in any insets applied to the `UIScrollView`.
+    var effectiveContentOffset: CGPoint {
+        CGPoint(
+            x: contentOffset.x + adjustedContentInset.left,
+            y: contentOffset.y + adjustedContentInset.top
+        )
     }
 }
