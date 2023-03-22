@@ -17,4 +17,11 @@ public enum SectionStyle: Hashable {
         case .month: return .month
         }
     }
+    
+    public var description: String {
+        switch self {
+        case .week: return "Week"
+        case .month: return "Month"
+        }
+    }
 }

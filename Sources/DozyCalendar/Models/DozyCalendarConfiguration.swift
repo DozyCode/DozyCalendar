@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-public struct DozyCalendarConfiguration {
+public struct DozyCalendarConfiguration: Hashable {
     
     public init(
         range: DateRange,
@@ -25,12 +25,12 @@ public struct DozyCalendarConfiguration {
         self.startOfWeek = startOfWeek
     }
     
-    let range: DateRange
-    let scrollAxis: Axis
-    let rowSpacing: CGFloat
-    let columnSpacing: CGFloat
-    let sectionStyle: SectionStyle
-    let startOfWeek: Weekday
+    public var range: DateRange
+    public var scrollAxis: Axis
+    public var rowSpacing: CGFloat
+    public var columnSpacing: CGFloat
+    public var sectionStyle: SectionStyle
+    public var startOfWeek: Weekday
 }
 
 public extension DozyCalendarConfiguration {

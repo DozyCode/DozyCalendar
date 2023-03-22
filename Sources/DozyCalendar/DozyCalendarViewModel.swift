@@ -14,8 +14,7 @@ import SwiftUI
 // - Multiple selection
 // - Vertical scroll axis not working
 // - Better errors
-// - Hook up weekday bools
-// - Make sure highlighted day changes when today changes
+// - Add isToday to cell builder
 
 enum CalendarError: String {
     case range = "The desired date lies outside of the provided date range."
@@ -288,8 +287,16 @@ extension DozyCalendarViewModel: UIScrollViewDelegate {
         let targetSection = sections[targetPosition]
         onWillScroll(targetSection.days)
     }
+    
+    func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        didEndDecelerating(scrollView)
+    }
 
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        didEndDecelerating(scrollView)
+    }
+    
+    private func didEndDecelerating(_ scrollView: UIScrollView) {
         guard let onDidScroll else { return }
         
         let calendarSize: CGFloat

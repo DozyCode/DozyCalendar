@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum DateRange {
+public enum DateRange: Hashable {
     case infinite
     case limited(startDate: Date, endDate: Date)
 }

@@ -98,6 +98,7 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                     LazyHStack(spacing: 0) {
                         ForEach(viewModel.sections, id: \.self) { section in
                             calendarSection(section)
+                                .padding(.horizontal, configuration.columnSpacing)
                                 .frame(width: calendarWidth)
                         }
                     }
@@ -109,6 +110,7 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                                 .readSize { size in
                                     calendarHeight = size.height
                                 }
+                                .padding(.vertical, configuration.rowSpacing)
                                 .frame(width: calendarWidth, height: calendarHeight)
                         }
                     }
