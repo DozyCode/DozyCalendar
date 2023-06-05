@@ -68,7 +68,6 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     @State private var currentPage: Int = 0
     @State private var calendarWidth: CGFloat?
     @State private var calendarHeight: CGFloat?
-    @State private var weekdayWidth: CGFloat?
     @State private var currentWeekday: Int
     @State private var selectedWeekday: Int?
     
@@ -77,6 +76,10 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     private let headerBuilder: ((WeekdayModel, Bool, Bool) -> Header)?
     private let dateFormatter = DateFormatter()
     private let columns: [GridItem]
+
+    private var dayLabelWidth: CGFloat? {
+        calendarWidth == nil ? nil : (calendarWidth! - (configuration.sectionPadding * 2)) / 7
+    }
     
     public var body: some View {
         VStack(spacing: 0) {
@@ -88,29 +91,37 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                             currentWeekday == weekday.index,
                             selectedWeekday == weekday.index
                         )
-                            .frame(width: weekdayWidth)
+                        .frame(width: dayLabelWidth)
                     }
                 }
+                .padding(.horizontal, configuration.sectionPadding)
+                .frame(width: calendarWidth)
             }
             ScrollView(configuration.scrollAxis.toSet, showsIndicators: false) {
                 switch configuration.scrollAxis {
                 case .horizontal:
                     LazyHStack(spacing: 0) {
                         ForEach(viewModel.sections, id: \.self) { section in
-                            calendarSection(section)
-                                .padding(.horizontal, configuration.columnSpacing)
-                                .frame(width: calendarWidth)
+                            HStack(spacing: 0) {
+                                Spacer(minLength: 0)
+                                    .frame(width: calendarWidth == nil ? nil : configuration.sectionPadding)
+                                calendarSection(section)
+                                    .frame(width: calendarWidth == nil ? nil : calendarWidth! - (configuration.sectionPadding * 2))
+                                    .background(Color.orange)
+                                Spacer(minLength: 0)
+                                    .frame(width: calendarWidth == nil ? nil : configuration.sectionPadding)
+                            }
                         }
                     }
-                    .fixedSize()
+                    .fixedSize(horizontal: false, vertical: true)
                 case .vertical:
                     LazyVStack(spacing: 0) {
                         ForEach(viewModel.sections, id: \.self) { section in
                             calendarSection(section)
+                                .padding(.vertical, configuration.sectionPadding)
                                 .readSize { size in
                                     calendarHeight = size.height
                                 }
-                                .padding(.vertical, configuration.rowSpacing)
                                 .frame(width: calendarWidth, height: calendarHeight)
                         }
                     }
@@ -123,7 +134,6 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
             .frame(height: calendarHeight)
             .readSize { size in
                 calendarWidth = size.width
-                weekdayWidth = size.width / 7
                 viewModel.calendarSizeUpdated(size)
             }
         }
@@ -144,12 +154,19 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     @ViewBuilder private func calendarSection(_ section: Section) -> some View {
         LazyVGrid(columns: columns, alignment: .center, spacing: configuration.rowSpacing) {
             ForEach(section.days, id: \.self) { day in
-                cellBuilder(day, selectedDate?.id == day.date.id)
-                    .frame(maxWidth: .infinity)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        selectedDate = day.date
-                    }
+                // We need to add the spacers so that in a horizontal scrolling context,
+                // the day cells will adopt the proper width relative to the size of the
+                // calendar.
+                HStack(alignment: .center, spacing: 0) {
+                    Spacer()
+                    cellBuilder(day, selectedDate?.id == day.date.id)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    selectedDate = day.date
+                }
             }
         }
     }

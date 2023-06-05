@@ -15,10 +15,12 @@ struct DemoView: View {
     @State private var currentDate = Date()
     @State private var displayingWeekdays = true
     @State private var configuration = DozyCalendarConfiguration(
+//        range: .limited(startDate: Date(), endDate: Date(timeIntervalSinceNow: 15552000)),
         range: .infinite,
         scrollAxis: .horizontal,
         rowSpacing: 1,
         columnSpacing: 1,
+        sectionPadding: 1,
         sectionStyle: .month(dynamicRows: false),
         startOfWeek: .sun
     )
@@ -29,18 +31,16 @@ struct DemoView: View {
                 switch day {
                 case let .month(date):
                     ZStack {
-                        Circle()
-                            .fill(isSelected ? .blue : .clear)
-                            .padding(4)
-                        Text(date.formatted(.dateTime.day(.defaultDigits)))
-                            .foregroundColor(isSelected ? .white : .black)
-                            .padding(.vertical, 14)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background {
-                                Color.gray
-                                    .opacity(0.2)
-                            }
+                        if isSelected {
+                            Color.gray
+                        }
+                        VStack(spacing: 0) {
+                            Text(date.formatted(.dateTime.day(.defaultDigits)))
+                                .padding(.top, 4)
+                            Spacer()
+                        }
                     }
+                    .frame(width: 34, height: 34)
                 case .preMonth, .postMonth:
                     Text(day.date.formatted(.dateTime.day(.defaultDigits)))
                         .foregroundColor(Color.gray)
@@ -50,6 +50,7 @@ struct DemoView: View {
                             Color.gray
                                 .opacity(0.2)
                         }
+                        .frame(width: 34, height: 34)
                 }
             } headerBuilder: { weekday, isToday, isSelected in
                 if displayingWeekdays {
@@ -71,7 +72,6 @@ struct DemoView: View {
                 selectedDate = days.first { $0 == .month($0.date) }?.date
             }
             .padding(.top, 16)
-            .padding(.horizontal, 16)
             
             settings
         }
@@ -159,6 +159,13 @@ struct DemoView: View {
                             title: "Column"
                         ) { selection in
                             configuration.columnSpacing = CGFloat(selection)
+                        }
+                        PickerSetting(
+                            initialValue: 1,
+                            options: Array(0...6).map { PickerValue(value: $0, description: String($0)) },
+                            title: "Section"
+                        ) { selection in
+                            configuration.sectionPadding = CGFloat(selection)
                         }
                     }
                 }
