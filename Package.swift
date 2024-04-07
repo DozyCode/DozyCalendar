@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "DozyCalendar",
     platforms: [
-        .iOS(.v15)
+        .iOS(.v16)
     ],
     products: [
         .library(name: "DozyCalendar", targets: ["DozyCalendar"]),

@@ -7,13 +7,14 @@
 
 import SwiftUI
 
+@available(iOS 17.0, *)
 public struct DozyCalendar<Header: View, Cell: View>: View {
     
     public init(
         configuration: DozyCalendarConfiguration,
         selectedDate: Binding<Date?>,
-        @ViewBuilder cellBuilder: @escaping (Day, Bool) -> Cell,
-        @ViewBuilder headerBuilder: @escaping (WeekdayModel, Bool, Bool) -> Header
+        @ViewBuilder cell: @escaping (Day, Bool) -> Cell,
+        @ViewBuilder header: @escaping (WeekdayModel, Bool, Bool) -> Header
     ) {
         self.configuration = configuration
         self._selectedDate = selectedDate
@@ -21,8 +22,8 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
         if let selectedDate = selectedDate.wrappedValue {
             self._selectedWeekday = State(initialValue: Calendar.current.component(.weekday, from: selectedDate))
         }
-        self.cellBuilder = cellBuilder
-        self.headerBuilder = headerBuilder
+        self.cellBuilder = cell
+        self.headerBuilder = header
         self.columns = Array(0...6).map { _ in
             return GridItem(
                 .flexible(minimum: 0, maximum: .infinity),
@@ -66,7 +67,6 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     @StateObject var viewModel: DozyCalendarViewModel
     @Binding private var selectedDate: Date?
     @State private var currentPage: Int = 0
-    @State private var calendarWidth: CGFloat?
     @State private var calendarHeight: CGFloat?
     @State private var currentWeekday: Int
     @State private var selectedWeekday: Int?
@@ -76,13 +76,10 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     private let headerBuilder: ((WeekdayModel, Bool, Bool) -> Header)?
     private let dateFormatter = DateFormatter()
     private let columns: [GridItem]
-
-    private var dayLabelWidth: CGFloat? {
-        calendarWidth == nil ? nil : (calendarWidth! - (configuration.sectionPadding * 2)) / 7
-    }
     
     public var body: some View {
         VStack(spacing: 0) {
+            // MARK: Header
             if let headerBuilder {
                 HStack(alignment: .center, spacing: 0) {
                     ForEach(configuration.weekdayModels, id: \.weekday) { weekday in
@@ -91,12 +88,13 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                             currentWeekday == weekday.index,
                             selectedWeekday == weekday.index
                         )
-                        .frame(width: dayLabelWidth)
+                        .containerRelativeFrame(.horizontal, count: 7, spacing: 0)
                     }
                 }
                 .padding(.horizontal, configuration.sectionPadding)
-                .frame(width: calendarWidth)
             }
+            
+            // MARK: Calendar
             ScrollView(configuration.scrollAxis.toSet, showsIndicators: false) {
                 switch configuration.scrollAxis {
                 case .horizontal:
@@ -104,16 +102,22 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                         ForEach(viewModel.sections, id: \.self) { section in
                             HStack(spacing: 0) {
                                 Spacer(minLength: 0)
-                                    .frame(width: calendarWidth == nil ? nil : configuration.sectionPadding)
+                                    .frame(width: configuration.sectionPadding)
                                 calendarSection(section)
-                                    .frame(width: calendarWidth == nil ? nil : calendarWidth! - (configuration.sectionPadding * 2))
-                                    .background(Color.orange)
+                                    .background(Color.gray.opacity(0.2))
+                                    .frame(maxWidth: .infinity)
+                                    .readSize { size in
+                                        calendarHeight = size.height
+                                    }
                                 Spacer(minLength: 0)
-                                    .frame(width: calendarWidth == nil ? nil : configuration.sectionPadding)
+                                    .frame(width: configuration.sectionPadding)
                             }
+                            .containerRelativeFrame(.horizontal)
+                            .id(section.id)
                         }
                     }
-                    .fixedSize(horizontal: false, vertical: true)
+                    .scrollTargetLayout()
+                    .frame(height: calendarHeight)
                 case .vertical:
                     LazyVStack(spacing: 0) {
                         ForEach(viewModel.sections, id: \.self) { section in
@@ -122,19 +126,20 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                                 .readSize { size in
                                     calendarHeight = size.height
                                 }
-                                .frame(width: calendarWidth, height: calendarHeight)
                         }
                     }
-                    .frame(height: calendarHeight)
+                    .containerRelativeFrame([.horizontal, .vertical])
+                    .scrollTargetLayout()
                 }
             }
-            .uiScrollView { uiScrollView in
-                viewModel.install(uiScrollView)
-            }
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $viewModel.visibleSectionID)
             .frame(height: calendarHeight)
             .readSize { size in
-                calendarWidth = size.width
                 viewModel.calendarSizeUpdated(size)
+            }
+            .onChange(of: viewModel.visibleSectionID) { oldValue, newValue in
+                viewModel.visibleSectionChanged()
             }
         }
         .onAppear {

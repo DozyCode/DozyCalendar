@@ -26,7 +26,7 @@ struct DemoView: View {
     )
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             DozyCalendar(configuration: configuration, selectedDate: $selectedDate) { day, isSelected in
                 switch day {
                 case let .month(date):
@@ -45,14 +45,9 @@ struct DemoView: View {
                     Text(day.date.formatted(.dateTime.day(.defaultDigits)))
                         .foregroundColor(Color.gray)
                         .padding(.vertical, 14)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background {
-                            Color.gray
-                                .opacity(0.2)
-                        }
                         .frame(width: 34, height: 34)
                 }
-            } headerBuilder: { weekday, isToday, isSelected in
+            } header: { weekday, isToday, isSelected in
                 if displayingWeekdays {
                     Text(weekday.shortText)
                         .padding(.vertical, 6)
@@ -71,9 +66,9 @@ struct DemoView: View {
                 print("~~ Did scroll to: \(days.first { $0 == .month($0.date) }!.date)")
                 selectedDate = days.first { $0 == .month($0.date) }?.date
             }
-            .padding(.top, 16)
             
             settings
+                .frame(maxHeight: .infinity)
         }
     }
     
@@ -95,7 +90,7 @@ struct DemoView: View {
                                         .datePickerStyle(.compact)
                                         .labelsHidden()
                                         .padding(.vertical, 4)
-                                        .onChange(of: currentDate) { date in
+                                        .onChange(of: currentDate) { _, date in
                                             viewModel.scrollTo(date)
                                         }
                                     Color.white
@@ -170,8 +165,7 @@ struct DemoView: View {
                     }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
+            .padding(16)
         }
     }
     
