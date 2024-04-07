@@ -32,6 +32,10 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     var onWillScroll: (([Day]) -> Void)?
     var onDidScroll: (([Day]) -> Void)?
     
+    func scrollView(_ uiScrollView: UIScrollView) {
+        self.uiScrollView = uiScrollView
+    }
+    
     func isCurrentWeekday(index: Int) -> Bool {
         let weekday = calendar.component(.weekday, from: Date())
         return index == weekday
@@ -84,6 +88,7 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     private let startOfWeek: Weekday
     private let scrollAxis: Axis
     
+    private weak var uiScrollView: UIScrollView?
     private var sectionCache = [Section.Identifier: Section]()
     private var dateUponAppear: Date?
     private var calendarSize: CGSize = .zero
@@ -116,7 +121,6 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
                 sections.append(section)
             } else {
                 let section = section(for: sectionIDIterator)
-                sectionCache[sectionIDIterator] = section
                 sections.append(section)
             }
             sectionIDIterator = sectionIDIterator.next(calendar)
@@ -172,8 +176,9 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
                 }
             }
         }
-        
-        return Section(id: sectionID, days: days)
+        let section = Section(id: sectionID, days: days)
+        sectionCache[sectionID] = section
+        return section
     }
     
     private func appendSection(direction: Direction) {

@@ -132,6 +132,9 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                     .scrollTargetLayout()
                 }
             }
+            .uiScrollView { scrollView in
+                viewModel.scrollView(scrollView)
+            }
             .scrollTargetBehavior(.paging)
             .scrollPosition(id: $viewModel.visibleSectionID)
             .frame(height: calendarHeight)

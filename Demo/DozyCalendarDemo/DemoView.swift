@@ -13,6 +13,7 @@ struct DemoView: View {
     @StateObject private var viewModel = DozyCalendarDemoViewModel()
     @State private var selectedDate: Date? = Date()
     @State private var currentDate = Date()
+    @State private var monthText = " "
     @State private var displayingWeekdays = true
     @State private var configuration = DozyCalendarConfiguration(
 //        range: .limited(startDate: Date(), endDate: Date(timeIntervalSinceNow: 15552000)),
@@ -27,6 +28,14 @@ struct DemoView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            HStack {
+                Text(monthText)
+                    .font(.headline)
+                    .padding(.bottom, 4)
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            
             DozyCalendar(configuration: configuration, selectedDate: $selectedDate) { day, isSelected in
                 switch day {
                 case let .month(date):
@@ -60,11 +69,14 @@ struct DemoView: View {
             .id(configuration)
             .proxy { viewModel.proxy = $0 }
             .willScrollToSectionWithDays { days in
-                print("~~ Will scroll to: \(days.first { $0 == .month($0.date) }!.date)")
+                guard let monthDate = days.first(where: { $0 == .month($0.date) })?.date else { return }
+                print("~~ Will scroll to: \(monthDate)")
             }
             .didScrollToSectionWithDays { days in
-                print("~~ Did scroll to: \(days.first { $0 == .month($0.date) }!.date)")
-                selectedDate = days.first { $0 == .month($0.date) }?.date
+                guard let monthDate = days.first(where: { $0 == .month($0.date) })?.date else { return }
+                monthText = monthDate.formatted(.dateTime.month().year())
+                selectedDate = monthDate
+                print("~~ Did scroll to: \(monthDate)")
             }
             
             settings
@@ -229,7 +241,7 @@ fileprivate struct PickerSetting<ValueType: Hashable>: View {
             }
             .pickerStyle(.segmented)
         }
-        .onChange(of: selection) { selection in
+        .onChange(of: selection) { _, selection in
             onChange(selection)
         }
     }
