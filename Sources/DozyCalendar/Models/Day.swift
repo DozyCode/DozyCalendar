@@ -19,4 +19,11 @@ public enum Day: Hashable, Equatable {
         case let .postMonth(date): return date
         }
     }
+    
+    public var isInMonth: Bool {
+        switch self {
+        case .month: return true
+        default: return false
+        }
+    }
 }
