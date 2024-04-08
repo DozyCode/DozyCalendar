@@ -13,8 +13,8 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     public init(
         configuration: DozyCalendarConfiguration,
         selectedDate: Binding<Date?>,
-        @ViewBuilder cell: @escaping (Day, Bool) -> Cell,
-        @ViewBuilder header: @escaping (WeekdayModel, Bool, Bool) -> Header
+        @ViewBuilder cell: @escaping (_ day: Day, _ isSelected: Bool) -> Cell,
+        @ViewBuilder header: @escaping (_ weekday: WeekdayModel, _ isToday: Bool, _ isSelected: Bool) -> Header
     ) {
         self.configuration = configuration
         self._selectedDate = selectedDate
@@ -72,8 +72,8 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     @State private var selectedWeekday: Int?
     
     private let configuration: DozyCalendarConfiguration
-    private let cellBuilder: (Day, Bool) -> Cell
-    private let headerBuilder: ((WeekdayModel, Bool, Bool) -> Header)?
+    private let cellBuilder: (_ day: Day, _ isSelected: Bool) -> Cell
+    private let headerBuilder: ((_ weekday: WeekdayModel, _ isToday: Bool, _ isSelected: Bool) -> Header)?
     private let dateFormatter = DateFormatter()
     private let columns: [GridItem]
     
