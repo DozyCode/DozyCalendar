@@ -82,6 +82,13 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     private var dateUponAppear: Date?
     private var calendarSize: CGSize = .zero
     
+    private var calendarSectionSize: CGFloat {
+        switch scrollAxis {
+        case .horizontal: return calendarSize.width
+        case .vertical: return calendarSize.height
+        }
+    }
+    
     // MARK: - Helpers
     
     private func generateCalendar(baseDate: Date) {
@@ -225,10 +232,18 @@ extension DozyCalendarViewModel: DozyCalendarProxy {
     ) -> Bool {
         if let sectionIndex = sections.firstIndex(where: { $0.id == sectionID }),
            let section = sectionCache[sectionID] {
-            let offset = CGPoint(
-                x: CGFloat(sectionIndex) * calendarSize.width,
-                y: scrollView.contentOffset.y
-            )
+            let offset = {
+                switch scrollAxis {
+                case .horizontal: return CGPoint(
+                        x: CGFloat(sectionIndex) * calendarSize.width,
+                        y: scrollView.contentOffset.y
+                    )
+                case .vertical: return CGPoint(
+                    x: scrollView.contentOffset.x,
+                    y: CGFloat(sectionIndex) * calendarSize.height
+                )
+                }
+            }()
             onWillScroll?(section.days)
             scrollView.setContentOffset(offset, animated: animated)
             onDidScroll?(section.days)
@@ -245,7 +260,13 @@ extension DozyCalendarViewModel: UIScrollViewDelegate {
         withVelocity velocity: CGPoint,
         targetContentOffset: UnsafeMutablePointer<CGPoint>
     ) {
-        let targetSectionIndex = Int(targetContentOffset.pointee.x / calendarSize.width)
+        let targetOffset = {
+            switch scrollAxis {
+            case .horizontal: return targetContentOffset.pointee.x
+            case .vertical: return targetContentOffset.pointee.y
+            }
+        }()
+        let targetSectionIndex = Int(targetOffset / calendarSectionSize)
         let targetSection = sections[targetSectionIndex]
         onWillScroll?(targetSection.days)
         
@@ -253,15 +274,31 @@ extension DozyCalendarViewModel: UIScrollViewDelegate {
             appendSection(direction: .forward)
         } else if targetSectionIndex <= 2 {
             appendSection(direction: .backward)
-            scrollView.contentOffset = CGPoint(
-                x: scrollView.contentOffset.x + calendarSize.width,
-                y: scrollView.contentOffset.y
-            )
+            
+            switch scrollAxis {
+            case .horizontal:
+                scrollView.contentOffset = CGPoint(
+                    x: scrollView.contentOffset.x + calendarSize.width,
+                    y: scrollView.contentOffset.y
+                )
+            case .vertical:
+                scrollView.contentOffset = CGPoint(
+                    x: scrollView.contentOffset.x,
+                    y: scrollView.contentOffset.y + calendarSize.height
+                )
+            }
         }
     }
     
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        let sectionIndex = Int(scrollView.contentOffset.x / calendarSize.width)
+        let contentOffset = {
+            switch scrollAxis {
+            case .horizontal: return scrollView.contentOffset.x
+            case .vertical: return scrollView.contentOffset.y
+            }
+        }()
+        
+        let sectionIndex = Int(contentOffset / calendarSectionSize)
         let section = sections[sectionIndex]
         onDidScroll?(section.days)
     }

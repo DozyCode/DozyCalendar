@@ -104,7 +104,6 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                                 Spacer(minLength: 0)
                                     .frame(width: configuration.sectionPadding)
                                 calendarSection(section)
-                                    .background(Color.gray.opacity(0.2))
                                     .frame(maxWidth: .infinity)
                                     .readSize { size in
                                         calendarHeight = size.height
@@ -126,9 +125,10 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                                 .readSize { size in
                                     calendarHeight = size.height
                                 }
+                                .containerRelativeFrame([.horizontal, .vertical])
+                                .id(section.id)
                         }
                     }
-                    .containerRelativeFrame([.horizontal, .vertical])
                     .scrollTargetLayout()
                 }
             }

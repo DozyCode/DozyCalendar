@@ -16,7 +16,6 @@ struct DemoView: View {
     @State private var monthText = " "
     @State private var displayingWeekdays = true
     @State private var configuration = DozyCalendarConfiguration(
-//        range: .limited(startDate: Date(), endDate: Date(timeIntervalSinceNow: 15552000)),
         range: .infinite,
         scrollAxis: .horizontal,
         rowSpacing: 1,
