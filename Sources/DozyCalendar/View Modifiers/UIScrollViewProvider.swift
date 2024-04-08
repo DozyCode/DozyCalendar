@@ -40,7 +40,7 @@ private struct UIScrollViewProvider: ViewModifier {
                     .frame(width: 1, height: 0)
                     // Call `onAppear` when the coordinator's published value changes.
                     .onReceive(coordinator.$uiScrollView) { uiScrollView in
-                        guard let uiScrollView = uiScrollView else { return }
+                        guard let uiScrollView else { return }
                         onAppear(uiScrollView)
                     }
             }
@@ -122,6 +122,7 @@ private class ScrollViewTracingView<ViewType: UIView>: UIView {
         let viewID = UUID().uuidString
         wrappingView.accessibilityIdentifier = viewID
 
+        // TODO: Need a more robust way of finding this.
         // The `ScrollView` can consistently be found one place further along in the view stack,
         // so we iterate one position.
         guard let currentViewIndex = parentView.subviews.firstIndex(where: { $0.accessibilityIdentifier == viewID }),

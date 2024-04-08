@@ -68,6 +68,7 @@ struct DemoView: View {
             }
             .id(configuration)
             .proxy { viewModel.proxy = $0 }
+            .onAppear(perform: viewModel.appeared)
             .willScrollToSectionWithDays { days in
                 guard let monthDate = days.first(where: { $0 == .month($0.date) })?.date else { return }
                 print("~~ Will scroll to: \(monthDate)")
@@ -285,7 +286,7 @@ fileprivate struct ToggleSetting: View {
         Toggle(isOn: $isOn) {
             Text(title)
         }
-        .onChange(of: isOn) { selection in
+        .onChange(of: isOn) { _, selection in
             binding?.wrappedValue = selection
             onChange?(selection)
         }
@@ -295,6 +296,10 @@ fileprivate struct ToggleSetting: View {
 class DozyCalendarDemoViewModel: ObservableObject {
     
     weak var proxy: DozyCalendarProxy?
+    
+    func appeared() {
+        proxy?.scrollTo(Date(), animated: false)
+    }
     
     func scrollTo(_ date: Date) {
         proxy?.scrollTo(date, animated: true)

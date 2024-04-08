@@ -33,7 +33,10 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     var onDidScroll: (([Day]) -> Void)?
     
     func scrollView(_ uiScrollView: UIScrollView) {
-        self.uiScrollView = uiScrollView
+        self.scrollView = uiScrollView
+        if dateRange == .infinite {
+            uiScrollView.delegate = self
+        }
     }
     
     func isCurrentWeekday(index: Int) -> Bool {
@@ -62,20 +65,6 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         calendarSize = size
     }
     
-    func visibleSectionChanged() {
-        guard let visibleSectionID,
-              let section = sectionCache[visibleSectionID] else { return }
-        onDidScroll?(section.days)
-        
-        guard let currentPosition = sections.firstIndex(where: { $0.id == visibleSectionID }) else { return }
-        // If we approach either end, recalculate the months.
-        if currentPosition >= sections.count - 2 {
-            appendSection(direction: .forward)
-        } else if currentPosition <= 2 {
-            appendSection(direction: .backward)
-        }
-    }
-    
     // MARK: - Constants
     
     private let sectionDistanceToEdge = 6
@@ -88,7 +77,7 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     private let startOfWeek: Weekday
     private let scrollAxis: Axis
     
-    private weak var uiScrollView: UIScrollView?
+    private weak var scrollView: UIScrollView?
     private var sectionCache = [Section.Identifier: Section]()
     private var dateUponAppear: Date?
     private var calendarSize: CGSize = .zero
@@ -107,8 +96,6 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
             let lastSectionID = endDate.sectionID(style: sectionStyle, calendar: calendar)
             generateSections(firstSectionID, lastSectionID)
         }
-        
-        scrollTo(baseDate, animated: false)
     }
     
     private func generateSections(_ firstSectionID: Section.Identifier, _ secondSectionID: Section.Identifier) {
@@ -216,15 +203,66 @@ extension DozyCalendarViewModel: DozyCalendarProxy {
     
     func scrollTo(_ date: Date, animated: Bool) {
         let sectionID = date.sectionID(style: sectionStyle, calendar: calendar)
-        // If the current array of sections contains the date, scroll directly to it.
-        if let firstSection = sections.first,
-           let lastSection = sections.last,
-           firstSection.id...lastSection.id ~= sectionID {
+        
+        guard let scrollView else {
             self.visibleSectionID = sectionID
-        } else {
-            // Otherwise, regenerate the calendar.
-            generateCalendar(baseDate: date)
-            self.visibleSectionID = sectionID
+            return
         }
+        
+        // If the current array of sections contains the date, scroll directly to it.
+        // Otherwise, regenerate the calendar and try again.
+        if !scrollToExisting(sectionID: sectionID, animated: animated, scrollView: scrollView) {
+            generateCalendar(baseDate: date)
+            scrollToExisting(sectionID: sectionID, animated: animated, scrollView: scrollView)
+        }
+    }
+    
+    @discardableResult
+    private func scrollToExisting(
+        sectionID: Section.Identifier,
+        animated: Bool,
+        scrollView: UIScrollView
+    ) -> Bool {
+        if let sectionIndex = sections.firstIndex(where: { $0.id == sectionID }),
+           let section = sectionCache[sectionID] {
+            let offset = CGPoint(
+                x: CGFloat(sectionIndex) * calendarSize.width,
+                y: scrollView.contentOffset.y
+            )
+            onWillScroll?(section.days)
+            scrollView.setContentOffset(offset, animated: animated)
+            onDidScroll?(section.days)
+            return true
+        }
+        return false
+    }
+}
+
+extension DozyCalendarViewModel: UIScrollViewDelegate {
+    
+    func scrollViewWillEndDragging(
+        _ scrollView: UIScrollView,
+        withVelocity velocity: CGPoint,
+        targetContentOffset: UnsafeMutablePointer<CGPoint>
+    ) {
+        let targetSectionIndex = Int(targetContentOffset.pointee.x / calendarSize.width)
+        let targetSection = sections[targetSectionIndex]
+        onWillScroll?(targetSection.days)
+        
+        if targetSectionIndex >= sections.count - 2 {
+            appendSection(direction: .forward)
+        } else if targetSectionIndex <= 2 {
+            appendSection(direction: .backward)
+            scrollView.contentOffset = CGPoint(
+                x: scrollView.contentOffset.x + calendarSize.width,
+                y: scrollView.contentOffset.y
+            )
+        }
+    }
+    
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        let sectionIndex = Int(scrollView.contentOffset.x / calendarSize.width)
+        let section = sections[sectionIndex]
+        onDidScroll?(section.days)
     }
 }

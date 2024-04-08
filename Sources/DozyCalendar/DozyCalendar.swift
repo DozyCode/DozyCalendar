@@ -141,9 +141,6 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
             .readSize { size in
                 viewModel.calendarSizeUpdated(size)
             }
-            .onChange(of: viewModel.visibleSectionID) { oldValue, newValue in
-                viewModel.visibleSectionChanged()
-            }
         }
         .onAppear {
             proxyProvider?(viewModel)
