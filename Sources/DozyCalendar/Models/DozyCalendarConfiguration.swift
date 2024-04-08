@@ -11,6 +11,7 @@ public struct DozyCalendarConfiguration: Hashable {
     
     public init(
         range: DateRange,
+        scrollAxis: Axis,
         rowSpacing: CGFloat,
         columnSpacing: CGFloat,
         sectionPadding: CGFloat,
@@ -18,7 +19,7 @@ public struct DozyCalendarConfiguration: Hashable {
         startOfWeek: Weekday
     ) {
         self.range = range
-        self.scrollAxis = .horizontal
+        self.scrollAxis = scrollAxis
         self.rowSpacing = rowSpacing
         self.columnSpacing = columnSpacing
         self.sectionPadding = sectionPadding

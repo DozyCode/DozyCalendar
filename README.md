@@ -6,7 +6,7 @@ DozyCalendar provides a highly customizable Calendar component in pure SwiftUI. 
 
 Customization options include...
 - date range OR infinite scrolling
-- horizontal or vertical scrolling (coming soon)
+- horizontal or vertical scrolling
 - month or week layout
 - start of week
 - weekday indicators

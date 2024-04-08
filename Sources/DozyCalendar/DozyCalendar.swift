@@ -136,7 +136,8 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                 viewModel.scrollView(scrollView)
             }
             .scrollTargetBehavior(.paging)
-            .scrollPosition(id: $viewModel.visibleSectionID)
+            // TODO: Was using this for initial scroll position, but it causes other issues.
+//            .scrollPosition(id: $viewModel.visibleSectionID)
             .frame(height: calendarHeight)
             .readSize { size in
                 viewModel.calendarSizeUpdated(size)
