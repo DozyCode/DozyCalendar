@@ -9,6 +9,10 @@
 /* Begin PBXBuildFile section */
 		5CB3AADC29CA53DD00C6B351 /* DemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB3AADB29CA53DD00C6B351 /* DemoView.swift */; };
 		5CB75EDC29C427C700A3126E /* DozyCalendar in Resources */ = {isa = PBXBuildFile; fileRef = 5CF5F30029C3C73A00D78B7A /* DozyCalendar */; };
+		5CD2B7972BC4EDEA00AF53D5 /* DemoButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD2B7962BC4EDEA00AF53D5 /* DemoButtonStyle.swift */; };
+		5CD2B7992BC4EDFC00AF53D5 /* DozyCalendarDemoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD2B7982BC4EDFC00AF53D5 /* DozyCalendarDemoViewModel.swift */; };
+		5CD2B79B2BC4EE2A00AF53D5 /* PickerSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD2B79A2BC4EE2A00AF53D5 /* PickerSetting.swift */; };
+		5CD2B79E2BC4EE4200AF53D5 /* ToggleSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD2B79D2BC4EE4200AF53D5 /* ToggleSetting.swift */; };
 		5CF5F2D629C3B8FD00D78B7A /* DozyCalendarDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF5F2D529C3B8FD00D78B7A /* DozyCalendarDemo.swift */; };
 		5CFACCBE29C42A310079111F /* DozyCalendar in Frameworks */ = {isa = PBXBuildFile; productRef = 5CFACCBD29C42A310079111F /* DozyCalendar */; };
 /* End PBXBuildFile section */
@@ -16,6 +20,10 @@
 /* Begin PBXFileReference section */
 		5CB3AADB29CA53DD00C6B351 /* DemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoView.swift; sourceTree = "<group>"; };
 		5CB3AADD29CAB7CB00C6B351 /* Demo-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Demo-Info.plist"; sourceTree = "<group>"; };
+		5CD2B7962BC4EDEA00AF53D5 /* DemoButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoButtonStyle.swift; sourceTree = "<group>"; };
+		5CD2B7982BC4EDFC00AF53D5 /* DozyCalendarDemoViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DozyCalendarDemoViewModel.swift; sourceTree = "<group>"; };
+		5CD2B79A2BC4EE2A00AF53D5 /* PickerSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickerSetting.swift; sourceTree = "<group>"; };
+		5CD2B79D2BC4EE4200AF53D5 /* ToggleSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleSetting.swift; sourceTree = "<group>"; };
 		5CF5F2D229C3B8FD00D78B7A /* Demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Demo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CF5F2D529C3B8FD00D78B7A /* DozyCalendarDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DozyCalendarDemo.swift; sourceTree = "<group>"; };
 		5CF5F30029C3C73A00D78B7A /* DozyCalendar */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = DozyCalendar; path = ..; sourceTree = "<group>"; };
@@ -33,6 +41,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5CD2B7952BC4EDE300AF53D5 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				5CD2B79C2BC4EE3200AF53D5 /* Settings */,
+				5CD2B7962BC4EDEA00AF53D5 /* DemoButtonStyle.swift */,
+			);
+			path = Helpers;
+			sourceTree = "<group>";
+		};
+		5CD2B79C2BC4EE3200AF53D5 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				5CD2B79A2BC4EE2A00AF53D5 /* PickerSetting.swift */,
+				5CD2B79D2BC4EE4200AF53D5 /* ToggleSetting.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		5CF5F2C929C3B8FD00D78B7A = {
 			isa = PBXGroup;
 			children = (
@@ -56,7 +82,9 @@
 			isa = PBXGroup;
 			children = (
 				5CF5F2D529C3B8FD00D78B7A /* DozyCalendarDemo.swift */,
+				5CD2B7982BC4EDFC00AF53D5 /* DozyCalendarDemoViewModel.swift */,
 				5CB3AADB29CA53DD00C6B351 /* DemoView.swift */,
+				5CD2B7952BC4EDE300AF53D5 /* Helpers */,
 			);
 			path = DozyCalendarDemo;
 			sourceTree = "<group>";
@@ -148,8 +176,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CD2B7972BC4EDEA00AF53D5 /* DemoButtonStyle.swift in Sources */,
 				5CF5F2D629C3B8FD00D78B7A /* DozyCalendarDemo.swift in Sources */,
+				5CD2B79B2BC4EE2A00AF53D5 /* PickerSetting.swift in Sources */,
 				5CB3AADC29CA53DD00C6B351 /* DemoView.swift in Sources */,
+				5CD2B79E2BC4EE4200AF53D5 /* ToggleSetting.swift in Sources */,
+				5CD2B7992BC4EDFC00AF53D5 /* DozyCalendarDemoViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

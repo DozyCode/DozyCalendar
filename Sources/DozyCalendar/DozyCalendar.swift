@@ -13,7 +13,7 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     public init(
         configuration: DozyCalendarConfiguration,
         selectedDate: Binding<Date?>,
-        @ViewBuilder cell: @escaping (_ day: Day, _ isSelected: Bool) -> Cell,
+        @ViewBuilder cell: @escaping (_ day: Day, _ isToday: Bool, _ isSelected: Bool) -> Cell,
         @ViewBuilder header: @escaping (_ weekday: WeekdayModel, _ isToday: Bool, _ isSelected: Bool) -> Header
     ) {
         self.configuration = configuration
@@ -38,7 +38,7 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     public init(
         configuration: DozyCalendarConfiguration,
         selectedDate: Binding<Date?>,
-        @ViewBuilder cellBuilder: @escaping (Day, Bool) -> Cell
+        @ViewBuilder cellBuilder: @escaping (_ day: Day, _ isToday: Bool, _ isSelected: Bool) -> Cell
     ) where Header == EmptyView {
         self.configuration = configuration
         self._selectedDate = selectedDate
@@ -68,11 +68,12 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     @Binding private var selectedDate: Date?
     @State private var currentPage: Int = 0
     @State private var calendarHeight: CGFloat?
+    @State private var calendarWidth: CGFloat = .zero
     @State private var currentWeekday: Int
     @State private var selectedWeekday: Int?
     
     private let configuration: DozyCalendarConfiguration
-    private let cellBuilder: (_ day: Day, _ isSelected: Bool) -> Cell
+    private let cellBuilder: (_ day: Day, _ isToday: Bool, _ isSelected: Bool) -> Cell
     private let headerBuilder: ((_ weekday: WeekdayModel, _ isToday: Bool, _ isSelected: Bool) -> Header)?
     private let dateFormatter = DateFormatter()
     private let columns: [GridItem]
@@ -88,7 +89,7 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                             currentWeekday == weekday.index,
                             selectedWeekday == weekday.index
                         )
-                        .containerRelativeFrame(.horizontal, count: 7, spacing: 0)
+                        .frame(width: calendarWidth / 7)
                     }
                 }
                 .padding(.horizontal, configuration.sectionPadding)
@@ -136,10 +137,9 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                 viewModel.scrollView(scrollView)
             }
             .scrollTargetBehavior(.paging)
-            // TODO: Was using this for initial scroll position, but it causes other issues.
-//            .scrollPosition(id: $viewModel.visibleSectionID)
             .frame(height: calendarHeight)
             .readSize { size in
+                calendarWidth = size.width
                 viewModel.calendarSizeUpdated(size)
             }
         }
@@ -160,12 +160,12 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     @ViewBuilder private func calendarSection(_ section: Section) -> some View {
         LazyVGrid(columns: columns, alignment: .center, spacing: configuration.rowSpacing) {
             ForEach(section.days, id: \.self) { day in
-                // We need to add the spacers so that in a horizontal scrolling context,
+                // We need to add the spacers so that, in a horizontal scrolling context,
                 // the day cells will adopt the proper width relative to the size of the
                 // calendar.
                 HStack(alignment: .center, spacing: 0) {
                     Spacer()
-                    cellBuilder(day, selectedDate?.id == day.date.id)
+                    cellBuilder(day, day.date.id == Date().id, selectedDate?.id == day.date.id)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)

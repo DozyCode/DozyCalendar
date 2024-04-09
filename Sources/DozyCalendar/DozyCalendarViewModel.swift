@@ -26,7 +26,6 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     
     // MARK: - API
     
-    @Published var visibleSectionID: Section.Identifier?
     @Published var sections: [Section] = []
     
     var onWillScroll: (([Day]) -> Void)?
@@ -36,6 +35,10 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         self.scrollView = uiScrollView
         if dateRange == .infinite {
             uiScrollView.delegate = self
+        }
+        if let queuedDateScrollPosition {
+            scrollTo(queuedDateScrollPosition, animated: false)
+            self.queuedDateScrollPosition = nil
         }
     }
     
@@ -54,7 +57,6 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         calendar.firstWeekday = startOfWeek.rawValue
         self.calendar = calendar
         let baseDate = Date()
-        self.visibleSectionID = baseDate.sectionID(style: sectionStyle, calendar: calendar)
         
         super.init()
         generateCalendar(baseDate: baseDate)
@@ -81,6 +83,8 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     private var sectionCache = [Section.Identifier: Section]()
     private var dateUponAppear: Date?
     private var calendarSize: CGSize = .zero
+    
+    private var queuedDateScrollPosition: Date?
     
     private var calendarSectionSize: CGFloat {
         switch scrollAxis {
@@ -209,13 +213,12 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
 extension DozyCalendarViewModel: DozyCalendarProxy {
     
     func scrollTo(_ date: Date, animated: Bool) {
-        let sectionID = date.sectionID(style: sectionStyle, calendar: calendar)
-        
         guard let scrollView else {
-            self.visibleSectionID = sectionID
+            self.queuedDateScrollPosition = date
             return
         }
         
+        let sectionID = date.sectionID(style: sectionStyle, calendar: calendar)
         // If the current array of sections contains the date, scroll directly to it.
         // Otherwise, regenerate the calendar and try again.
         if !scrollToExisting(sectionID: sectionID, animated: animated, scrollView: scrollView) {

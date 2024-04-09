@@ -8,13 +8,13 @@
 import SwiftUI
 import DozyCalendar
 
-struct DemoView: View {
+internal struct DemoView: View {
     
     @StateObject private var viewModel = DozyCalendarDemoViewModel()
     @State private var selectedDate: Date? = Date()
     @State private var currentDate = Date()
     @State private var monthText = " "
-    @State private var displayingWeekdays = true
+    @State private var displayingSettings = false
     @State private var configuration = DozyCalendarConfiguration(
         range: .infinite,
         scrollAxis: .horizontal,
@@ -26,52 +26,38 @@ struct DemoView: View {
     )
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 12) {
             HStack {
                 Text(monthText)
                     .font(.headline)
-                    .padding(.bottom, 4)
                 Spacer()
             }
-            .padding(.horizontal, 12)
             
-            DozyCalendar(configuration: configuration, selectedDate: $selectedDate) { day, isSelected in
-                switch day {
-                case let .month(date):
-                    ZStack {
-                        if isSelected {
-                            Color.gray
-                        }
-                        VStack(spacing: 0) {
-                            Text(date.formatted(.dateTime.day(.defaultDigits)))
-                                .padding(.top, 4)
-                            Spacer()
-                        }
-                    }
-                    .frame(width: 34, height: 34)
-                case .preMonth, .postMonth:
-                    Text(day.date.formatted(.dateTime.day(.defaultDigits)))
-                        .foregroundColor(Color.gray)
-                        .padding(.vertical, 14)
-                        .frame(width: 34, height: 34)
-                }
+            // Create the calendar with our desired configuration and selected date binding
+            DozyCalendar(
+                configuration: configuration,
+                selectedDate: $selectedDate
+            ) { day, isToday, isSelected in
+                dayBuilder(day, isToday: isToday, isSelected: isSelected)
             } header: { weekday, isToday, isSelected in
-                if displayingWeekdays {
-                    Text(weekday.shortText)
-                        .padding(.vertical, 6)
-                        .padding(.top, 4)
-                        .foregroundColor(isSelected ? .blue : (isToday ? .orange : .black))
-                } else {
-                    EmptyView()
-                }
+                headerBuilder(weekday, isToday: isToday, isSelected: isSelected)
             }
             .id(configuration)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
+            .background {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.gray.opacity(0.2))
+            }
+            // Give the view model the proxy, which allows for programmatic scrolling.
             .proxy { viewModel.proxy = $0 }
             .onAppear(perform: viewModel.appeared)
+            // Callbacks on will scroll
             .willScrollToSectionWithDays { days in
                 guard let monthDate = days.first(where: { $0 == .month($0.date) })?.date else { return }
                 print("~~ Will scroll to: \(monthDate)")
             }
+            // Callbacks on did scroll
             .didScrollToSectionWithDays { days in
                 guard let monthDate = days.first(where: { $0 == .month($0.date) })?.date else { return }
                 monthText = monthDate.formatted(.dateTime.month().year())
@@ -79,49 +65,93 @@ struct DemoView: View {
                 print("~~ Did scroll to: \(monthDate)")
             }
             
+            Spacer()
+            
             settings
-                .frame(maxHeight: .infinity)
+        }
+        .padding(.horizontal, 16)
+        .sheet(isPresented: $displayingSettings) {
+            settingsPanel
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
         }
     }
     
+    @ViewBuilder private func dayBuilder(_ day: Day, isToday: Bool, isSelected: Bool) -> some View {
+        switch day {
+        case let .month(date):
+            Text(date.formatted(.dateTime.day(.defaultDigits)))
+                .foregroundStyle(isSelected ? Color.white : isToday ? Color.blue : Color.black)
+                .font(Font.system(size: 16, weight: isSelected ? .bold : .regular))
+                .frame(width: 34, height: 34)
+                .background {
+                    if isSelected {
+                        Circle()
+                            .fill(isToday ? .blue : .black)
+                    }
+                }
+        case .preMonth, .postMonth:
+            Text(day.date.formatted(.dateTime.day(.defaultDigits)))
+                .foregroundColor(Color.gray)
+                .frame(width: 34, height: 34)
+        }
+    }
+    
+    @ViewBuilder private func headerBuilder(
+        _ weekday: WeekdayModel,
+        isToday: Bool,
+        isSelected: Bool
+    ) -> some View {
+        Text(weekday.shortText.uppercased())
+            .font(Font.system(size: 12, weight: .regular))
+            .padding(.vertical, 6)
+            .foregroundStyle(isToday ? .blue : .black)
+    }
+    
     private var settings: some View {
-        ScrollView {
-            VStack {
-                section("Navigate") {
-                    HStack {
-                        Button("Go to today") {
-                            viewModel.scrollTo(Date())
-                        }
-                        .buttonStyle(DemoButtonStyle())
-                        Button("Go to...") { }
-                            .buttonStyle(DemoButtonStyle())
-                            .allowsHitTesting(false)
-                            .background {
-                                ZStack {
-                                    DatePicker("", selection: $currentDate, displayedComponents: .date)
-                                        .datePickerStyle(.compact)
-                                        .labelsHidden()
-                                        .padding(.vertical, 4)
-                                        .onChange(of: currentDate) { _, date in
-                                            viewModel.scrollTo(date)
-                                        }
-                                    Color.white
-                                        .allowsHitTesting(false)
+        VStack(spacing: 16) {
+            HStack(spacing: 16) {
+                Button("Go to Today") {
+                    viewModel.scrollTo(Date())
+                }
+                .buttonStyle(DemoButtonStyle())
+                Button("Go to...") { }
+                    .buttonStyle(DemoButtonStyle())
+                    .allowsHitTesting(false)
+                    .background {
+                        ZStack {
+                            DatePicker("", selection: $currentDate, displayedComponents: .date)
+                                .datePickerStyle(.compact)
+                                .labelsHidden()
+                                .padding(.vertical, 4)
+                                .onChange(of: currentDate) { _, date in
+                                    viewModel.scrollTo(date)
                                 }
-                            }
-                    }
-                }
-                section("Selection") {
-                    VStack {
-                        ToggleSetting(title: "Multiple selection") { isOn in
-                            
+                            Color.white
+                                .allowsHitTesting(false)
                         }
-                        Button("Clear") {
-                            selectedDate = nil
-                        }
-                        .buttonStyle(DemoButtonStyle())
                     }
+            }
+            
+            HStack(spacing: 16) {
+                Button("Clear Selection") {
+                    selectedDate = nil
                 }
+                .buttonStyle(DemoButtonStyle())
+                
+                Button {
+                    displayingSettings = true
+                } label: {
+                    Image(systemName: "gear")
+                }
+                .frame(width: 40)
+            }
+        }
+    }
+    
+    private var settingsPanel: some View {
+        ScrollView {
+            VStack(spacing: 18) {
                 section("Configuration") {
                     VStack(spacing: 14) {
                         PickerSetting(
@@ -145,12 +175,12 @@ struct DemoView: View {
                         ) { selection in
                             configuration.startOfWeek = selection
                         }
-                        ToggleSetting($displayingWeekdays, title: "Display weekdays")
                         ToggleSetting(title: "Dynamic rows") { isOn in
                             configuration.sectionStyle = .month(dynamicRows: isOn)
                         }
                     }
                 }
+                Divider()
                 section("Spacing") {
                     VStack {
                         PickerSetting(
@@ -182,136 +212,13 @@ struct DemoView: View {
     }
     
     private func section(_ title: String, settings: @escaping () -> some View) -> some View {
-        VStack {
+        VStack(spacing: 10) {
             HStack {
-                Text(title)
-                    .font(.headline)
+                Text(title.uppercased())
+                    .font(.system(size: 14, weight: .semibold))
                 Spacer()
             }
             settings()
-            Divider()
         }
-    }
-}
-
-fileprivate struct PickerValue<ValueType: Hashable>: Hashable {
-    var value: ValueType
-    var description: String
-}
-
-fileprivate struct PickerSetting<ValueType: Hashable>: View {
-    
-    // MARK: - API
-    
-    init(
-        initialValue: ValueType,
-        options: [PickerValue<ValueType>],
-        title: String? = nil,
-        onChange: @escaping (ValueType) -> Void
-    ) {
-        self._selection = State(initialValue: initialValue)
-        self.options = options
-        self.title = title
-        self.onChange = onChange
-    }
-    
-    // MARK: - Variables
-    
-    @State private var selection: ValueType
-    
-    private let options: [PickerValue<ValueType>]
-    private let title: String?
-    private let onChange: (ValueType) -> Void
-    
-    // MARK: - Body
-    
-    var body: some View {
-        HStack {
-            if let title {
-                HStack {
-                    Text(title)
-                    Spacer(minLength: 0)
-                }
-                .frame(width: 90)
-            }
-            Picker("", selection: $selection) {
-                ForEach(options, id: \.value) { option in
-                    Text(option.description.capitalized)
-                }
-            }
-            .pickerStyle(.segmented)
-        }
-        .onChange(of: selection) { _, selection in
-            onChange(selection)
-        }
-    }
-}
-
-fileprivate struct ToggleSetting: View {
-    
-    // MARK: - API
-    
-    init(
-        _ isOn: Binding<Bool>,
-        title: String
-    ) {
-        self.isOn = isOn.wrappedValue
-        self.binding = isOn
-        self.title = title
-        self.onChange = nil
-    }
-    
-    init(
-        title: String,
-        initialValue: Bool = false,
-        onChange: @escaping (Bool) -> Void
-    ) {
-        self.title = title
-        self.isOn = initialValue
-        self.onChange = onChange
-    }
-    
-    // MARK: - Variables
-    
-    @State private var isOn: Bool
-    private var binding: Binding<Bool>?
-    
-    private let title: String
-    private let onChange: ((Bool) -> Void)?
-    
-    // MARK: - Body
-    
-    var body: some View {
-        Toggle(isOn: $isOn) {
-            Text(title)
-        }
-        .onChange(of: isOn) { _, selection in
-            binding?.wrappedValue = selection
-            onChange?(selection)
-        }
-    }
-}
-
-class DozyCalendarDemoViewModel: ObservableObject {
-    
-    weak var proxy: DozyCalendarProxy?
-    
-    func appeared() {
-        proxy?.scrollTo(Date(), animated: false)
-    }
-    
-    func scrollTo(_ date: Date) {
-        proxy?.scrollTo(date, animated: true)
-    }
-}
-
-struct DemoButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundColor(.blue)
-            .frame(height: 34)
-            .frame(maxWidth: .infinity)
-            .background(Color.gray.opacity(0.14))
-            .cornerRadius(8)
     }
 }
