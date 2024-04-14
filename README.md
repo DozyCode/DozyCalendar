@@ -1,9 +1,8 @@
 # DozyCalendar
 
-![GitHub Release](https://img.shields.io/github/v/release/DozyCode/DozyCalendar)
-![iOS 17.0+](https://img.shields.io/badge/iOS-17.0%2B-yellow.svg)
-![Xcode 15.0+](https://img.shields.io/badge/Xcode-15.0%2B-blue.svg)
-![Swift 5.9+](https://img.shields.io/badge/Swift-5.9%2B-purple)
+![GitHub Release](https://img.shields.io/github/v/release/DozyCode/DozyCalendar?include_prereleases&display_name=release)
+![Static Badge](https://img.shields.io/badge/iOS-17.0%2B-blue?color=%23ad5fb1)
+![Static Badge](https://img.shields.io/badge/Swift-5.9%2B-blue?color=%23ad5fb1)
 ![GitHub License](https://img.shields.io/github/license/DozyCode/DozyCalendar)
 
 ## Overview
