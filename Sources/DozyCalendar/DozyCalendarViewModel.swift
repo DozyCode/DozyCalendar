@@ -8,21 +8,7 @@
 import UIKit
 import SwiftUI
 
-// TODO: What's Left...
-// - Make sure jumping in certain direction looks accurate w/ scrolling
-//      - This is still an issue when you jump so far that a complete regeneration is needed
-// - Multiple selection
-// - Vertical scroll axis not working
-// - Better errors
-// - Add isToday to cell builder
-
-enum CalendarError: String {
-    case range = "The desired date lies outside of the provided date range."
-    case configuration = "The developer provided a non-viable configuration."
-    case metadataGeneration = "The calendar failed to generate the correct dates."
-}
-
-class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvider {
+class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvider, DozyCalendarProxy {
     
     // MARK: - API
     
@@ -30,22 +16,6 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     
     var onWillScroll: (([Day]) -> Void)?
     var onDidScroll: (([Day]) -> Void)?
-    
-    func scrollView(_ uiScrollView: UIScrollView) {
-        self.scrollView = uiScrollView
-        if dateRange == .infinite {
-            uiScrollView.delegate = self
-        }
-        if let queuedDateScrollPosition {
-            scrollTo(queuedDateScrollPosition, animated: false)
-            self.queuedDateScrollPosition = nil
-        }
-    }
-    
-    func isCurrentWeekday(index: Int) -> Bool {
-        let weekday = calendar.component(.weekday, from: Date())
-        return index == weekday
-    }
     
     init(configuration: DozyCalendarConfiguration) {
         self.sectionStyle = configuration.sectionStyle
@@ -56,20 +26,76 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         var calendar = Calendar.current
         calendar.firstWeekday = startOfWeek.rawValue
         self.calendar = calendar
-        let baseDate = Date()
         
         super.init()
-        generateCalendar(baseDate: baseDate)
-        
+        // Generate the calendar around the current date
+        let sectionID = Date().sectionID(style: sectionStyle, calendar: calendar)
+        generateCalendar(baseSectionID: sectionID)
+    }
+    
+    func scrollViewFound(_ uiScrollView: UIScrollView) {
+        self.scrollView = uiScrollView
+        if dateRange == .infinite {
+            uiScrollView.delegate = self
+        }
+        if let queuedDateScrollPosition {
+            scrollTo(queuedDateScrollPosition, animated: false)
+            self.queuedDateScrollPosition = nil
+        }
     }
     
     func calendarSizeUpdated(_ size: CGSize) {
         calendarSize = size
     }
     
+    /// - Returns: A boolean which is true when the index matches the current weekday
+    func isCurrentWeekday(index: Int) -> Bool {
+        let weekday = calendar.component(.weekday, from: Date())
+        return index == weekday
+    }
+    
+    /// Commands the scroll view to scroll to the given date
+    /// - Parameters:
+    ///     - date: The date to scroll to
+    ///     - animated: Dictates whether the scroll should animate
+    func scrollTo(_ date: Date, animated: Bool) {
+        guard let scrollView else {
+            self.queuedDateScrollPosition = date
+            return
+        }
+        
+        let sectionID = date.sectionID(style: sectionStyle, calendar: calendar)
+        // If the current array of sections contains the date, scroll directly to it.
+        // Otherwise, regenerate the calendar and try again.
+        if !scrollToExisting(sectionID: sectionID, animated: animated, scrollView: scrollView) {
+            generateCalendar(baseSectionID: sectionID)
+            scrollToExisting(sectionID: sectionID, animated: animated, scrollView: scrollView)
+        }
+    }
+    
     // MARK: - Constants
     
+    /// The number of sections to generate to each edge from the center section
     private let sectionDistanceToEdge = 6
+    
+    fileprivate enum Direction {
+        case backward
+        case forward
+        
+        var endSectionIDKeypath: KeyPath<[Section], Section.Identifier?> {
+            switch self {
+            case .backward: return \.first?.id
+            case .forward: return \.last?.id
+            }
+        }
+        
+        func nextSectionID(sectionID: Section.Identifier, _ calendar: Calendar) -> Section.Identifier {
+            switch self {
+            case .backward: return sectionID.previous(calendar)
+            case .forward: return sectionID.next(calendar)
+            }
+        }
+    }
     
     // MARK: - Variables
     
@@ -80,12 +106,14 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     private let scrollAxis: Axis
     
     private weak var scrollView: UIScrollView?
+    /// A cache of each `Section`, keyed by its `Identifier`
     private var sectionCache = [Section.Identifier: Section]()
-    private var dateUponAppear: Date?
+    /// The current view size of the calendar
     private var calendarSize: CGSize = .zero
-    
+    /// The date to scroll into view when the scroll view appears
     private var queuedDateScrollPosition: Date?
     
+    /// The view size of a single section in the direction of scroll
     private var calendarSectionSize: CGFloat {
         switch scrollAxis {
         case .horizontal: return calendarSize.width
@@ -95,12 +123,15 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     
     // MARK: - Helpers
     
-    private func generateCalendar(baseDate: Date) {
+    /// Generates the calendar data using the `dateRange` provided in the `DozyCalendarConfiguration`
+    /// - Parameters:
+    ///     - baseSectionID: Identifies the section around which the calendar should be generated.
+    ///     If using `DateRange.infinite`, the base section ID will represent the center section.
+    private func generateCalendar(baseSectionID: Section.Identifier) {
         switch dateRange {
         case .infinite:
-            let currentSectionID = baseDate.sectionID(style: sectionStyle, calendar: calendar)
-            let firstSectionID = currentSectionID.advanced(by: -sectionDistanceToEdge, calendar)
-            let lastSectionID = currentSectionID.advanced(by: sectionDistanceToEdge, calendar)
+            let firstSectionID = baseSectionID.advanced(by: -sectionDistanceToEdge, calendar)
+            let lastSectionID = baseSectionID.advanced(by: sectionDistanceToEdge, calendar)
             generateSections(firstSectionID, lastSectionID)
         case let .limited(startDate, endDate):
             let firstSectionID = startDate.sectionID(style: sectionStyle, calendar: calendar)
@@ -109,12 +140,19 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         }
     }
     
-    private func generateSections(_ firstSectionID: Section.Identifier, _ secondSectionID: Section.Identifier) {
-        guard firstSectionID <= secondSectionID else { fatalError("First section can't be before second.") }
-        var sections = [Section]()
-        var sectionIDIterator = firstSectionID
+    /// Generates sections ranging from the `startSectionID` to the `endSectionID`
+    /// - Parameters:
+    ///     - startSectionID: Identifies the starting section in the span to be generated
+    ///     - endSectionID: Identifies the ending section in the span to be generated
+    private func generateSections(_ startSectionID: Section.Identifier, _ endSectionID: Section.Identifier) {
+        guard startSectionID <= endSectionID else {
+            fatalError("Starting section must be earlier than ending section. Please check the provided `DozyCalendarConfiguration")
+        }
         
-        while sectionIDIterator <= secondSectionID {
+        var sections = [Section]()
+        var sectionIDIterator = startSectionID
+        
+        while sectionIDIterator <= endSectionID {
             if let section = sectionCache[sectionIDIterator] {
                 sections.append(section)
             } else {
@@ -126,6 +164,9 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         self.sections = sections
     }
     
+    /// Generates a section for the provided `sectionID`
+    /// - Parameters:
+    ///     - sectionID: Identifies the section to be generated
     private func section(for sectionID: Section.Identifier) -> Section {
         let firstDate = sectionID.firstDate
         let startOfWeek = startOfWeek.rawValue
@@ -153,7 +194,7 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
                     }
                 }
             }
-            // Create the `month` dates.
+            // Create the `month` dates
             do {
                 for day in range {
                     // Subtract one, because the first of the month is the `firstDate`.
@@ -179,6 +220,9 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         return section
     }
     
+    /// Appends a new section to an end of the array of sections
+    /// - Parameters:
+    ///     - direction: Specifies which edge of the section array to append the new section
     private func appendSection(direction: Direction) {
         guard let endSectionID = sections[keyPath: direction.endSectionIDKeypath] else { assert(false) }
         let nextSectionID = direction.nextSectionID(sectionID: endSectionID, calendar)
@@ -190,43 +234,11 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         }
     }
     
-    fileprivate enum Direction {
-        case backward
-        case forward
-        
-        var endSectionIDKeypath: KeyPath<[Section], Section.Identifier?> {
-            switch self {
-            case .backward: return \.first?.id
-            case .forward: return \.last?.id
-            }
-        }
-        
-        func nextSectionID(sectionID: Section.Identifier, _ calendar: Calendar) -> Section.Identifier {
-            switch self {
-            case .backward: return sectionID.previous(calendar)
-            case .forward: return sectionID.next(calendar)
-            }
-        }
-    }
-}
-
-extension DozyCalendarViewModel: DozyCalendarProxy {
-    
-    func scrollTo(_ date: Date, animated: Bool) {
-        guard let scrollView else {
-            self.queuedDateScrollPosition = date
-            return
-        }
-        
-        let sectionID = date.sectionID(style: sectionStyle, calendar: calendar)
-        // If the current array of sections contains the date, scroll directly to it.
-        // Otherwise, regenerate the calendar and try again.
-        if !scrollToExisting(sectionID: sectionID, animated: animated, scrollView: scrollView) {
-            generateCalendar(baseDate: date)
-            scrollToExisting(sectionID: sectionID, animated: animated, scrollView: scrollView)
-        }
-    }
-    
+    /// Scrolls to the `Section` identified by the `sectionID`, if it is in the displayed sections array
+    /// - Parameters:
+    ///     - sectionID: The `Section.Identifier` identifying the section to scroll to
+    ///     - animated: Indicates whether the scroll should be animated
+    ///     - scrollView: The `UIScrollView` whose scroll offset should be adjusted
     @discardableResult
     private func scrollToExisting(
         sectionID: Section.Identifier,
