@@ -102,15 +102,13 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                     LazyHStack(spacing: 0) {
                         ForEach(viewModel.sections, id: \.self) { section in
                             HStack(spacing: 0) {
-                                Spacer(minLength: 0)
-                                    .frame(width: configuration.sectionPadding)
                                 calendarSection(section)
                                     .frame(maxWidth: .infinity)
+                                    // Accounts for the section padding
+                                    .padding(.horizontal, configuration.sectionPadding)
                                     .readSize { size in
                                         calendarHeight = size.height
                                     }
-                                Spacer(minLength: 0)
-                                    .frame(width: configuration.sectionPadding)
                             }
                             .containerRelativeFrame(.horizontal)
                             .id(section.id)
@@ -122,6 +120,7 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                     LazyVStack(spacing: 0) {
                         ForEach(viewModel.sections, id: \.self) { section in
                             calendarSection(section)
+                                // Accounts for the section padding
                                 .padding(.vertical, configuration.sectionPadding)
                                 .readSize { size in
                                     calendarHeight = size.height
@@ -139,7 +138,8 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
             .scrollTargetBehavior(.paging)
             .frame(height: calendarHeight)
             .readSize { size in
-                calendarWidth = size.width
+                // Account for the section padding in our width measurement
+                calendarWidth = size.width - (configuration.sectionPadding * 2)
                 viewModel.calendarSizeUpdated(size)
             }
         }

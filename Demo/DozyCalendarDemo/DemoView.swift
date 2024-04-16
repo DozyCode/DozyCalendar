@@ -18,9 +18,9 @@ internal struct DemoView: View {
     @State private var configuration = DozyCalendarConfiguration(
         range: .infinite,
         scrollAxis: .horizontal,
-        rowSpacing: 1,
-        columnSpacing: 1,
-        sectionPadding: 1,
+        rowSpacing: 0,
+        columnSpacing: 0,
+        sectionPadding: 0,
         sectionStyle: .month(dynamicRows: false),
         startOfWeek: .sun
     )
