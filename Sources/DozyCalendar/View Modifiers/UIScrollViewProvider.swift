@@ -126,7 +126,7 @@ private class ScrollViewTracingView<ViewType: UIView>: UIView {
         // The `ScrollView` can consistently be found one place further along in the view stack,
         // so we iterate one position.
         guard let currentViewIndex = parentView.subviews.firstIndex(where: { $0.accessibilityIdentifier == viewID }),
-              let desiredViewIndex = parentView.subviews.count >= currentViewIndex + 1 ? currentViewIndex + 1 : nil,
+              let desiredViewIndex = parentView.subviews.count > currentViewIndex + 1 ? currentViewIndex + 1 : nil,
               let scrollView = parentView.subviews[desiredViewIndex].subviews.first as? UIScrollView else {
             assertionFailure("ScrollViewTracingView.findScrollView did not capture the UIScrollView.")
             return
