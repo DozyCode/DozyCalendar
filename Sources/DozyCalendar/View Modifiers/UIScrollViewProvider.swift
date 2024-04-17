@@ -122,15 +122,27 @@ private class ScrollViewTracingView<ViewType: UIView>: UIView {
         let viewID = UUID().uuidString
         wrappingView.accessibilityIdentifier = viewID
 
-        // TODO: Need a more robust way of finding this.
-        // The `ScrollView` can consistently be found one place further along in the view stack,
-        // so we iterate one position.
-        guard let currentViewIndex = parentView.subviews.firstIndex(where: { $0.accessibilityIdentifier == viewID }),
-              let desiredViewIndex = parentView.subviews.count > currentViewIndex + 1 ? currentViewIndex + 1 : nil,
-              let scrollView = parentView.subviews[desiredViewIndex].subviews.first as? UIScrollView else {
+        // The `ScrollView` position in the view hierarchy is inconsistent, so we recursively
+        // iterate through the view hierarchy beneath the parent until we find it.
+        guard let scrollView = findScrollView(fromView: parentView) else {
             assertionFailure("ScrollViewTracingView.findScrollView did not capture the UIScrollView.")
             return
         }
+        
         coordinator?.installScrollView(scrollView)
+    }
+    
+    private func findScrollView(fromView view: UIView) -> UIScrollView? {
+        for subview in view.subviews {
+            if let scrollView = subview as? UIScrollView {
+                return scrollView
+            } else {
+                if let scrollView = findScrollView(fromView: subview) {
+                    return scrollView
+                }
+            }
+        }
+        
+        return nil
     }
 }

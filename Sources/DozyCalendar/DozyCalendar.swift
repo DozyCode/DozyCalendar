@@ -10,6 +10,8 @@ import SwiftUI
 @available(iOS 17.0, *)
 public struct DozyCalendar<Header: View, Cell: View>: View {
     
+    // MARK: - API
+    
     public init(
         configuration: DozyCalendarConfiguration,
         selectedDate: Binding<Date?>,
@@ -60,9 +62,11 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
         _viewModel = StateObject(wrappedValue: DozyCalendarViewModel(configuration: configuration))
     }
     
-    @Environment(\.proxyProvider) var proxyProvider
-    @Environment(\.willScroll) var willScroll
-    @Environment(\.didScroll) var didScroll
+    // MARK: - Variables
+    
+    @Environment(\.proxyProvider) private var proxyProvider
+    @Environment(\.willScroll) private var willScroll
+    @Environment(\.didScroll) private var didScroll
     
     @StateObject var viewModel: DozyCalendarViewModel
     @Binding private var selectedDate: Date?
@@ -77,6 +81,8 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     private let headerBuilder: ((_ weekday: WeekdayModel, _ isToday: Bool, _ isSelected: Bool) -> Header)?
     private let dateFormatter = DateFormatter()
     private let columns: [GridItem]
+    
+    // MARK: - Body
     
     public var body: some View {
         VStack(spacing: 0) {
@@ -156,6 +162,8 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
             selectedWeekday = Calendar.current.component(.weekday, from: selectedDate)
         }
     }
+    
+    // MARK: - Helpers
     
     @ViewBuilder private func calendarSection(_ section: Section) -> some View {
         LazyVGrid(columns: columns, alignment: .center, spacing: configuration.rowSpacing) {
