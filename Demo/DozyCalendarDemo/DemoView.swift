@@ -69,6 +69,7 @@ internal struct DemoView: View {
             
             settings
         }
+        .clipped()
         .padding(.horizontal, 16)
         .sheet(isPresented: $displayingSettings) {
             settingsPanel

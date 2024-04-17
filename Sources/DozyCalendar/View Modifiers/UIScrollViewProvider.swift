@@ -116,11 +116,9 @@ private class ScrollViewTracingView<ViewType: UIView>: UIView {
         // parent.
         
         // This view is a child of `ScrollViewTracingViewRepresentable` which is wrapped
-        // in a SwiftUI `background` view, so we move two steps up the hierarchy.
-        guard let wrappingView = superview,
-              let parentView = wrappingView.superview else { return }
-        let viewID = UUID().uuidString
-        wrappingView.accessibilityIdentifier = viewID
+        // in a SwiftUI `background` view. In some cases, like when using the `clipped` modifier,
+        // the view is placed one more view up the hierarchy, so we move three steps up the hierarchy.
+        guard let parentView = superview?.superview?.superview ?? superview?.superview ?? superview else { return }
 
         // The `ScrollView` position in the view hierarchy is inconsistent, so we recursively
         // iterate through the view hierarchy beneath the parent until we find it.
