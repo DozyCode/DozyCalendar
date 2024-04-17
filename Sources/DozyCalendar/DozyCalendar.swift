@@ -15,11 +15,13 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     public init(
         configuration: DozyCalendarConfiguration,
         selectedDate: Binding<Date?>,
+        proxyProvider: ((DozyCalendarProxy) -> Void)? = nil,
         @ViewBuilder cell: @escaping (_ day: Day, _ isToday: Bool, _ isSelected: Bool) -> Cell,
         @ViewBuilder header: @escaping (_ weekday: WeekdayModel, _ isToday: Bool, _ isSelected: Bool) -> Header
     ) {
         self.configuration = configuration
         self._selectedDate = selectedDate
+        self.proxyProvidingClosure = proxyProvider
         self._currentWeekday = State(initialValue: Calendar.current.component(.weekday, from: Date()))
         if let selectedDate = selectedDate.wrappedValue {
             self._selectedWeekday = State(initialValue: Calendar.current.component(.weekday, from: selectedDate))
@@ -40,10 +42,12 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     public init(
         configuration: DozyCalendarConfiguration,
         selectedDate: Binding<Date?>,
+        proxyProvider: ((DozyCalendarProxy) -> Void)? = nil,
         @ViewBuilder cellBuilder: @escaping (_ day: Day, _ isToday: Bool, _ isSelected: Bool) -> Cell
     ) where Header == EmptyView {
         self.configuration = configuration
         self._selectedDate = selectedDate
+        self.proxyProvidingClosure = proxyProvider
         // TODO: Ideally this would dynamically update
         self._currentWeekday = State(initialValue: Calendar.current.component(.weekday, from: Date()))
         if let selectedDate = selectedDate.wrappedValue {
@@ -77,6 +81,7 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     @State private var selectedWeekday: Int?
     
     private let configuration: DozyCalendarConfiguration
+    private let proxyProvidingClosure: ((DozyCalendarProxy) -> Void)?
     private let cellBuilder: (_ day: Day, _ isToday: Bool, _ isSelected: Bool) -> Cell
     private let headerBuilder: ((_ weekday: WeekdayModel, _ isToday: Bool, _ isSelected: Bool) -> Header)?
     private let dateFormatter = DateFormatter()
@@ -151,6 +156,7 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
         }
         .onAppear {
             proxyProvider?(viewModel)
+            proxyProvidingClosure?(viewModel)
             viewModel.onWillScroll = willScroll
             viewModel.onDidScroll = didScroll
         }
