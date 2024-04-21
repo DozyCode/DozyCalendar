@@ -118,24 +118,36 @@ private class ScrollViewTracingView<ViewType: UIView>: UIView {
         // This view is a child of `ScrollViewTracingViewRepresentable` which is wrapped
         // in a SwiftUI `background` view. In some cases, like when using the `clipped` modifier,
         // the view is placed one more view up the hierarchy, so we move three steps up the hierarchy.
-        guard let parentView = superview?.superview?.superview ?? superview?.superview ?? superview else { return }
-
-        // The `ScrollView` position in the view hierarchy is inconsistent, so we recursively
-        // iterate through the view hierarchy beneath the parent until we find it.
-        guard let scrollView = findScrollView(fromView: parentView) else {
-            assertionFailure("ScrollViewTracingView.findScrollView did not capture the UIScrollView.")
+        guard var wrappingView = superview else { return }
+        var superview = wrappingView.superview
+        
+        // The `ScrollView` position in the view hierarchy may be one or two steps above the wrappingView.
+        // From there, we recursively iterate through the view hierarchy beneath the parent until we find it.
+        for _ in 0...1 {
+            guard let parentView = superview else { break }
+            guard let viewIndex = parentView.subviews.firstIndex(of: wrappingView),
+                  let scrollView = findScrollView(fromView: parentView, startingIndex: viewIndex) else {
+                wrappingView = parentView
+                superview = parentView.superview
+                continue
+            }
+            
+            coordinator?.installScrollView(scrollView)
             return
         }
         
-        coordinator?.installScrollView(scrollView)
+        assertionFailure("ScrollViewTracingView.findScrollView did not capture the UIScrollView.")
     }
     
-    private func findScrollView(fromView view: UIView) -> UIScrollView? {
-        for subview in view.subviews {
+    private func findScrollView(fromView view: UIView, startingIndex: Int?) -> UIScrollView? {
+        guard !view.subviews.isEmpty else { return nil }
+        
+        let relevantSubviews = view.subviews[(startingIndex ?? 0)..<view.subviews.endIndex]
+        for subview in relevantSubviews {
             if let scrollView = subview as? UIScrollView {
                 return scrollView
             } else {
-                if let scrollView = findScrollView(fromView: subview) {
+                if let scrollView = findScrollView(fromView: subview, startingIndex: nil) {
                     return scrollView
                 }
             }

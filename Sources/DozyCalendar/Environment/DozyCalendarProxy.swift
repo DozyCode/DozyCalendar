@@ -23,7 +23,7 @@ extension EnvironmentValues {
 }
 
 public extension View {
-    func proxy(_ provider: @escaping (DozyCalendarProxy) -> Void) -> some View {
+    func dozyCalendarProxy(_ provider: @escaping (DozyCalendarProxy) -> Void) -> some View {
         self.environment(\.proxyProvider, provider)
     }
 }
