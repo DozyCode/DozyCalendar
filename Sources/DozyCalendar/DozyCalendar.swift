@@ -181,6 +181,7 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                 .onTapGesture {
                     selectedDate = day.date
                 }
+                .id("\(day.date.id)-\(day.isInMonth)")
             }
         }
     }
