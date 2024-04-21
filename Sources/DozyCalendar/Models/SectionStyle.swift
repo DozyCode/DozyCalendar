@@ -18,6 +18,13 @@ public enum SectionStyle: Hashable {
         }
     }
     
+    var yearComponent: Calendar.Component {
+        switch self {
+        case .week: return .yearForWeekOfYear
+        case .month: return .year
+        }
+    }
+    
     public var description: String {
         switch self {
         case .week: return "Week"

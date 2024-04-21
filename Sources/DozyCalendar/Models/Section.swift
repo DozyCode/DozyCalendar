@@ -47,9 +47,9 @@ extension Section.Identifier {
             value: numberOfSections,
             to: firstDate(calendar)
         )!
-        let year = calendar.component(.year, from: newSectionDate)
+        let year = calendar.component(style.yearComponent, from: newSectionDate)
         let newSection = calendar.component(style.sectionComponent, from: newSectionDate)
-        return .init(style: style, year: year, section: newSection)
+        return Section.Identifier(style: style, year: year, section: newSection)
     }
 }
 
