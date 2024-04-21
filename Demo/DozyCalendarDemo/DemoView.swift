@@ -50,7 +50,7 @@ internal struct DemoView: View {
                     .fill(Color.gray.opacity(0.2))
             }
             // Give the view model the proxy, which allows for programmatic scrolling.
-            .proxy { viewModel.proxy = $0 }
+            .dozyCalendarProxy { viewModel.proxy = $0 }
             .onAppear(perform: viewModel.appeared)
             // Callbacks on will scroll
             .willScrollToSectionWithDays { days in
