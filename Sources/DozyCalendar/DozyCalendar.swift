@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-@available(iOS 17.0, *)
 public struct DozyCalendar<Header: View, Cell: View>: View {
     
     // MARK: - API
@@ -70,7 +69,7 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
     
     @StateObject var viewModel: DozyCalendarViewModel
     @Binding private var selectedDate: Date?
-    @State private var currentPage: Int = 0
+    @State private var contentOffset: CGPoint = .zero
     @State private var calendarHeight: CGFloat?
     @State private var calendarWidth: CGFloat = .zero
     @State private var currentWeekday: Int
@@ -138,8 +137,14 @@ public struct DozyCalendar<Header: View, Cell: View>: View {
                     .scrollTargetLayout()
                 }
             }
-            .uiScrollView { scrollView in
-                viewModel.scrollViewFound(scrollView)
+            .scrollPosition(id: $viewModel.currentSection)
+            .onScrollGeometryChange(for: CGPoint.self) { geometry in
+                geometry.contentOffset
+            } action: { _, newValue in
+                viewModel.scrollOffsetChanged(offset: newValue)
+            }
+            .onScrollPhaseChange { oldPhase, newPhase, context in
+                viewModel.scrollPhaseChanged(oldPhase: oldPhase, newPhase: newPhase, geometry: context.geometry)
             }
             .scrollTargetBehavior(.paging)
             .frame(height: calendarHeight)

@@ -5,7 +5,6 @@
 //  Created by Carter Foughty on 3/16/23.
 //
 
-import UIKit
 import SwiftUI
 
 class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvider, DozyCalendarProxy {
@@ -13,6 +12,7 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     // MARK: - API
     
     @Published var sections: [Section] = []
+    @Published var currentSection: Section?
     
     var onWillScroll: (([Day]) -> Void)?
     var onDidScroll: (([Day]) -> Void)?
@@ -33,17 +33,6 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
         generateCalendar(baseSectionID: sectionID)
     }
     
-    func scrollViewFound(_ uiScrollView: UIScrollView) {
-        self.scrollView = uiScrollView
-        if dateRange == .infinite {
-            uiScrollView.delegate = self
-        }
-        if let queuedDateScrollPosition {
-            scrollTo(queuedDateScrollPosition, animated: false)
-            self.queuedDateScrollPosition = nil
-        }
-    }
-    
     func calendarSizeUpdated(_ size: CGSize) {
         calendarSize = size
     }
@@ -59,17 +48,50 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     ///     - date: The date to scroll to
     ///     - animated: Dictates whether the scroll should animate
     func scrollTo(_ date: Date, animated: Bool) {
-        guard let scrollView else {
-            self.queuedDateScrollPosition = date
-            return
-        }
-        
         let sectionID = date.sectionID(style: sectionStyle, calendar: calendar)
         // If the current array of sections contains the date, scroll directly to it.
         // Otherwise, regenerate the calendar and try again.
-        if !scrollToExisting(sectionID: sectionID, animated: animated, scrollView: scrollView) {
+        if !scrollToExisting(sectionID: sectionID, animated: animated) {
             generateCalendar(baseSectionID: sectionID)
-            scrollToExisting(sectionID: sectionID, animated: animated, scrollView: scrollView)
+            scrollToExisting(sectionID: sectionID, animated: animated)
+        }
+    }
+    
+    func scrollPhaseChanged(oldPhase: ScrollPhase, newPhase: ScrollPhase, geometry: ScrollGeometry) {
+        switch (oldPhase, newPhase) {
+        case (.decelerating, .idle):
+            let contentOffset = {
+                switch scrollAxis {
+                case .horizontal: return geometry.contentOffset.x
+                case .vertical: return geometry.contentOffset.y
+                }
+            }()
+            
+            let sectionIndex = Int(contentOffset / calendarSectionSize)
+            let section = sections[sectionIndex]
+            onDidScroll?(section.days)
+        default: break
+        }
+    }
+    
+    func scrollOffsetChanged(offset: CGPoint) {
+        let offset = {
+            switch scrollAxis {
+            case .horizontal: return offset.x
+            case .vertical: return offset.y
+            }
+        }()
+        let targetSectionIndex = Int(offset / calendarSectionSize)
+        let targetSection = sections[targetSectionIndex]
+        if targetSection != lastWillScrollSection {
+            lastWillScrollSection = targetSection
+            onWillScroll?(targetSection.days)
+        }
+        
+        if targetSectionIndex >= sections.count - 2 {
+            appendSection(direction: .forward)
+        } else if targetSectionIndex <= 2 {
+            appendSection(direction: .backward)
         }
     }
     
@@ -105,13 +127,14 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     private let startOfWeek: Weekday
     private let scrollAxis: Axis
     
-    private weak var scrollView: UIScrollView?
     /// A cache of each `Section`, keyed by its `Identifier`
     private var sectionCache = [Section.Identifier: Section]()
     /// The current view size of the calendar
     private var calendarSize: CGSize = .zero
     /// The date to scroll into view when the scroll view appears
     private var queuedDateScrollPosition: Date?
+    /// The `Section` last reported to any `willScroll` callback
+    private var lastWillScrollSection: Section?
     
     /// The view size of a single section in the direction of scroll
     private var calendarSectionSize: CGFloat {
@@ -240,81 +263,13 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
     ///     - animated: Indicates whether the scroll should be animated
     ///     - scrollView: The `UIScrollView` whose scroll offset should be adjusted
     @discardableResult
-    private func scrollToExisting(
-        sectionID: Section.Identifier,
-        animated: Bool,
-        scrollView: UIScrollView
-    ) -> Bool {
-        if let sectionIndex = sections.firstIndex(where: { $0.id == sectionID }),
-           let section = sectionCache[sectionID] {
-            let offset = {
-                switch scrollAxis {
-                case .horizontal: return CGPoint(
-                        x: CGFloat(sectionIndex) * calendarSize.width,
-                        y: scrollView.contentOffset.y
-                    )
-                case .vertical: return CGPoint(
-                    x: scrollView.contentOffset.x,
-                    y: CGFloat(sectionIndex) * calendarSize.height
-                )
-                }
-            }()
-            onWillScroll?(section.days)
-            scrollView.setContentOffset(offset, animated: animated)
-            onDidScroll?(section.days)
-            return true
+    private func scrollToExisting(sectionID: Section.Identifier, animated: Bool) -> Bool {
+        guard let section = sectionCache[sectionID] else { return false }
+        onWillScroll?(section.days)
+        withAnimation(animated ? .default : nil) {
+            currentSection = section
         }
-        return false
-    }
-}
-
-extension DozyCalendarViewModel: UIScrollViewDelegate {
-    
-    func scrollViewWillEndDragging(
-        _ scrollView: UIScrollView,
-        withVelocity velocity: CGPoint,
-        targetContentOffset: UnsafeMutablePointer<CGPoint>
-    ) {
-        let targetOffset = {
-            switch scrollAxis {
-            case .horizontal: return targetContentOffset.pointee.x
-            case .vertical: return targetContentOffset.pointee.y
-            }
-        }()
-        let targetSectionIndex = Int(targetOffset / calendarSectionSize)
-        let targetSection = sections[targetSectionIndex]
-        onWillScroll?(targetSection.days)
-        
-        if targetSectionIndex >= sections.count - 2 {
-            appendSection(direction: .forward)
-        } else if targetSectionIndex <= 2 {
-            appendSection(direction: .backward)
-            
-            switch scrollAxis {
-            case .horizontal:
-                scrollView.contentOffset = CGPoint(
-                    x: scrollView.contentOffset.x + calendarSize.width,
-                    y: scrollView.contentOffset.y
-                )
-            case .vertical:
-                scrollView.contentOffset = CGPoint(
-                    x: scrollView.contentOffset.x,
-                    y: scrollView.contentOffset.y + calendarSize.height
-                )
-            }
-        }
-    }
-    
-    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        let contentOffset = {
-            switch scrollAxis {
-            case .horizontal: return scrollView.contentOffset.x
-            case .vertical: return scrollView.contentOffset.y
-            }
-        }()
-        
-        let sectionIndex = Int(contentOffset / calendarSectionSize)
-        let section = sections[sectionIndex]
         onDidScroll?(section.days)
+        return true
     }
 }
