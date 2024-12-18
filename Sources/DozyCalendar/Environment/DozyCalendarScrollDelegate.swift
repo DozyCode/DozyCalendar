@@ -12,19 +12,23 @@ public protocol DozyCalendarChangeProvider: AnyObject {
     var onDidScroll: (([Day]) -> Void)? { get set }
 }
 
-private struct ScrollEnvironmentKey: EnvironmentKey {
+private struct WillScrollEnvironmentKey: EnvironmentKey {
+    static let defaultValue: (([Day]) -> Void)? = nil
+}
+
+private struct DidScrollEnvironmentKey: EnvironmentKey {
     static let defaultValue: (([Day]) -> Void)? = nil
 }
 
 extension EnvironmentValues {
     var willScroll: (([Day]) -> Void)? {
-        get { self[ScrollEnvironmentKey.self] }
-        set { self[ScrollEnvironmentKey.self] = newValue }
+        get { self[WillScrollEnvironmentKey.self] }
+        set { self[WillScrollEnvironmentKey.self] = newValue }
     }
     
     var didScroll: (([Day]) -> Void)? {
-        get { self[ScrollEnvironmentKey.self] }
-        set { self[ScrollEnvironmentKey.self] = newValue }
+        get { self[DidScrollEnvironmentKey.self] }
+        set { self[DidScrollEnvironmentKey.self] = newValue }
     }
 }
 
