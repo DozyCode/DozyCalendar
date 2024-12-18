@@ -82,6 +82,7 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
             }
         }()
         let targetSectionIndex = Int(offset / calendarSectionSize)
+        guard sections.count > targetSectionIndex else { return }
         let targetSection = sections[targetSectionIndex]
         if targetSection != lastWillScrollSection {
             lastWillScrollSection = targetSection
