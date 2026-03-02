@@ -93,6 +93,10 @@ class DozyCalendarViewModel: NSObject, ObservableObject, DozyCalendarChangeProvi
             appendSection(direction: .forward)
         } else if targetSectionIndex <= 2 {
             appendSection(direction: .backward)
+            // After prepending, all section indices shift by +1 but the scroll offset hasn't
+            // adjusted yet. Reset lastWillScrollSection to the section now at targetSectionIndex
+            // so the next scrollOffsetChanged call doesn't fire a spurious willScroll.
+            lastWillScrollSection = sections.count > targetSectionIndex ? sections[targetSectionIndex] : nil
         }
     }
     
